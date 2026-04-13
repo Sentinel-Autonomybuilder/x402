@@ -3,7 +3,7 @@
 export interface PaymentOptions {
   chain: 'base' | 'solana';
   walletKey: string;
-  hours: number;
+  days: number;
 }
 
 export interface ConnectOptions {
@@ -37,9 +37,9 @@ export interface RegisterResponse {
 }
 
 export interface PricingResponse {
-  pricePerHourUsdc: string;
-  minHours: number;
-  maxHours: number;
+  pricePerDayUsdc: string;
+  minDays: number;
+  maxDays: number;
   chains: string[];
 }
 
@@ -47,7 +47,7 @@ export interface PaymentStatusResponse {
   txHash: string;
   chain: string;
   agentId: string;
-  hours: number;
+  days: number;
   usdcAmount: number;
   status: 'received' | 'verified' | 'allocated' | 'failed';
   sentinelTxHash: string | null;

@@ -15,9 +15,9 @@ export interface SolanaPaymentResult {
 export async function payOnSolana(opts: {
   walletKey: string;         // base58 secret key
   agentId: string;
-  hours: number;
+  days: number;
   operatorUsdcAta: string;   // our USDC ATA on Solana
-  pricePerHourUsdc: number;  // atomic units (6 decimals)
+  pricePerDayUsdc: number;  // atomic units (6 decimals)
   rpcUrl?: string;
   onProgress?: (step: string, detail: string) => void;
 }): Promise<SolanaPaymentResult> {
@@ -44,8 +44,8 @@ export async function payOnSolana(opts: {
   progress('wallet', `Solana wallet: ${keypair.publicKey.toBase58()}`);
 
   // 2. Calculate amount
-  const amount = opts.hours * opts.pricePerHourUsdc;
-  progress('quote', `Cost: ${amount / 1e6} USDC for ${opts.hours} hours`);
+  const amount = opts.days * opts.pricePerDayUsdc;
+  progress('quote', `Cost: ${amount / 1e6} USDC for ${opts.days} days`);
 
   // 3. Get ATAs
   const fromAta = await getAssociatedTokenAddress(USDC_MINT, keypair.publicKey);
@@ -56,7 +56,7 @@ export async function payOnSolana(opts: {
 
   // Memo instruction (routing info for our backend)
   // Memo program takes NO account keys — only the data payload
-  const memo = `${MEMO_PREFIX}${opts.agentId}:hours:${opts.hours}`;
+  const memo = `${MEMO_PREFIX}${opts.agentId}:days:${opts.days}`;
   tx.add({
     keys: [],
     programId: MEMO_PROGRAM,

@@ -8,14 +8,14 @@ import { queueRetry } from './retry.js';
 // ─── Contract ABI (only what we need) ───
 
 const PAYMENT_ABI = [
-  'event VpnPayment(address indexed sender, string agentId, uint256 numHours, uint256 amount, uint256 timestamp)',
+  'event VpnPayment(address indexed sender, string agentId, uint256 numDays, uint256 amount, uint256 timestamp)',
 ];
 
 // ─── Event Processing ───
 
 async function processPaymentEvent(
   agentId: string,
-  numHours: number,
+  numDays: number,
   amount: bigint,
   txHash: string,
   db: Db,
@@ -30,25 +30,25 @@ async function processPaymentEvent(
   const agent = db.getAgentById(agentId);
   if (!agent) {
     console.error(`[x402] Unknown agentId in payment event: ${agentId} (tx: ${txHash})`);
-    db.insertPayment(txHash, 'base', agentId, null, numHours, Number(amount));
+    db.insertPayment(txHash, 'base', agentId, null, numDays, Number(amount));
     db.updatePaymentStatus(txHash, 'failed', { error: 'Agent not registered' });
     return;
   }
 
   // 3. Verify amount matches expected
-  const expectedAmount = BigInt(numHours) * BigInt(config.pricePerHourUsdc);
+  const expectedAmount = BigInt(numDays) * BigInt(config.pricePerDayUsdc);
   if (amount < expectedAmount) {
     console.error(`[x402] Amount mismatch: got ${amount}, expected ${expectedAmount} (tx: ${txHash})`);
-    db.insertPayment(txHash, 'base', agentId, agent.sentinel_address, numHours, Number(amount));
+    db.insertPayment(txHash, 'base', agentId, agent.sentinel_address, numDays, Number(amount));
     db.updatePaymentStatus(txHash, 'failed', { error: `Amount mismatch: ${amount} < ${expectedAmount}` });
     return;
   }
 
   // 4. Insert payment as verified
-  const paymentId = db.insertPayment(txHash, 'base', agentId, agent.sentinel_address, numHours, Number(amount));
+  const paymentId = db.insertPayment(txHash, 'base', agentId, agent.sentinel_address, numDays, Number(amount));
   db.updatePaymentStatus(txHash, 'verified');
 
-  console.log(`[x402] Payment verified: ${agentId} → ${agent.sentinel_address}, ${numHours}h, ${amount} USDC atomic (tx: ${txHash})`);
+  console.log(`[x402] Payment verified: ${agentId} → ${agent.sentinel_address}, ${numDays}h, ${amount} USDC atomic (tx: ${txHash})`);
 
   // 5. Provision on Sentinel
   if (!operator) {
@@ -57,7 +57,7 @@ async function processPaymentEvent(
   }
 
   try {
-    const result = await provisionAgent(operator, db, config, agent.sentinel_address, numHours, txHash);
+    const result = await provisionAgent(operator, db, config, agent.sentinel_address, numDays, txHash);
     console.log(`[x402] Agent provisioned: ${agent.sentinel_address} on sub ${result.subscriptionId}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -107,13 +107,13 @@ export function startBaseWatcher(
       contract.on('VpnPayment', async (
         _sender: string,
         agentId: string,
-        numHours: bigint,
+        numDays: bigint,
         amount: bigint,
         _timestamp: bigint,
         event: ethers.EventLog,
       ) => {
         try {
-          await processPaymentEvent(agentId, Number(numHours), amount, event.transactionHash, db, config, operator);
+          await processPaymentEvent(agentId, Number(numDays), amount, event.transactionHash, db, config, operator);
         } catch (err) {
           console.error('[x402] Error processing payment event:', err);
         }
@@ -186,11 +186,11 @@ async function catchUpMissedEvents(
     for (const event of events) {
       if (!('args' in event)) continue;
       const log = event as ethers.EventLog;
-      const [_sender, agentId, numHours, amount] = log.args;
+      const [_sender, agentId, numDays, amount] = log.args;
 
       if (db.getPaymentByTxHash(log.transactionHash)) continue;
 
-      await processPaymentEvent(agentId, Number(numHours), amount, log.transactionHash, db, config, operator);
+      await processPaymentEvent(agentId, Number(numDays), amount, log.transactionHash, db, config, operator);
       processed++;
     }
 

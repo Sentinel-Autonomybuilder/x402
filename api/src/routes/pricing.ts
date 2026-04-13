@@ -8,12 +8,12 @@ export function pricingRoutes(config: Config): Router {
 
   // GET /pricing — Current pricing info
   router.get('/pricing', (_req, res) => {
-    const priceHuman = (config.pricePerHourUsdc / Math.pow(10, USDC_DECIMALS)).toFixed(USDC_DECIMALS);
+    const priceHuman = (config.pricePerDayUsdc / Math.pow(10, USDC_DECIMALS)).toFixed(USDC_DECIMALS);
 
     const response: PricingResponse = {
-      pricePerHourUsdc: priceHuman,
-      minHours: config.minHours,
-      maxHours: config.maxHours,
+      pricePerDayUsdc: priceHuman,
+      minDays: config.minDays,
+      maxDays: config.maxDays,
       chains: ['base', 'solana'],
     };
 

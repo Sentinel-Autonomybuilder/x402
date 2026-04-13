@@ -3,24 +3,19 @@ import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox/network-helpers';
 
 describe('BlueVpnPayment', function () {
-  const PRICE_PER_HOUR = 10_000n; // 0.01 USDC (6 decimals)
+  const PRICE_PER_DAY = 33333n; // ~$0.033 USDC (6 decimals) → $1/month
   const INITIAL_BALANCE = 1_000_000_000n; // 1000 USDC
 
   async function deployFixture() {
     const [owner, agent, other] = await ethers.getSigners();
 
-    // Deploy mock USDC
     const MockERC20 = await ethers.getContractFactory('MockERC20');
     const usdc = await MockERC20.deploy('USD Coin', 'USDC', 6);
 
-    // Deploy payment contract
     const BlueVpnPayment = await ethers.getContractFactory('BlueVpnPayment');
-    const payment = await BlueVpnPayment.deploy(await usdc.getAddress(), PRICE_PER_HOUR);
+    const payment = await BlueVpnPayment.deploy(await usdc.getAddress(), PRICE_PER_DAY);
 
-    // Fund agent with USDC
     await usdc.mint(agent.address, INITIAL_BALANCE);
-
-    // Agent approves payment contract
     await usdc.connect(agent).approve(await payment.getAddress(), ethers.MaxUint256);
 
     return { payment, usdc, owner, agent, other };
@@ -30,54 +25,65 @@ describe('BlueVpnPayment', function () {
     it('sets USDC address and price', async function () {
       const { payment, usdc } = await loadFixture(deployFixture);
       expect(await payment.usdc()).to.equal(await usdc.getAddress());
-      expect(await payment.pricePerHour()).to.equal(PRICE_PER_HOUR);
+      expect(await payment.pricePerDay()).to.equal(PRICE_PER_DAY);
     });
 
     it('sets deployer as owner', async function () {
       const { payment, owner } = await loadFixture(deployFixture);
       expect(await payment.owner()).to.equal(owner.address);
     });
+
+    it('reverts on zero price', async function () {
+      const MockERC20 = await ethers.getContractFactory('MockERC20');
+      const usdc = await MockERC20.deploy('USD Coin', 'USDC', 6);
+      const BlueVpnPayment = await ethers.getContractFactory('BlueVpnPayment');
+      await expect(BlueVpnPayment.deploy(await usdc.getAddress(), 0)).to.be.revertedWithCustomError(BlueVpnPayment, 'ZeroPrice');
+    });
   });
 
   describe('pay()', function () {
-    it('transfers correct USDC amount to owner', async function () {
+    it('transfers correct USDC for 30 days ($1)', async function () {
       const { payment, usdc, owner, agent } = await loadFixture(deployFixture);
 
-      const hours = 720n; // 30 days
-      const expectedCost = hours * PRICE_PER_HOUR; // 7,200,000 = 7.20 USDC
+      const days = 30n;
+      const expectedCost = days * PRICE_PER_DAY; // 999,990 = ~$1.00
 
       const ownerBefore = await usdc.balanceOf(owner.address);
-      await payment.connect(agent).pay('agent-123', hours);
+      await payment.connect(agent).pay('agent-123', days);
       const ownerAfter = await usdc.balanceOf(owner.address);
 
       expect(ownerAfter - ownerBefore).to.equal(expectedCost);
     });
 
+    it('transfers correct USDC for 1 day ($0.033)', async function () {
+      const { payment, usdc, owner, agent } = await loadFixture(deployFixture);
+
+      const ownerBefore = await usdc.balanceOf(owner.address);
+      await payment.connect(agent).pay('agent-1day', 1);
+      const ownerAfter = await usdc.balanceOf(owner.address);
+
+      expect(ownerAfter - ownerBefore).to.equal(PRICE_PER_DAY);
+    });
+
     it('emits VpnPayment event with correct data', async function () {
       const { payment, agent } = await loadFixture(deployFixture);
 
-      const hours = 24n;
-      const expectedAmount = hours * PRICE_PER_HOUR;
+      const days = 7n;
+      const expectedAmount = days * PRICE_PER_DAY;
 
-      await expect(payment.connect(agent).pay('agent-456', hours))
+      await expect(payment.connect(agent).pay('agent-456', days))
         .to.emit(payment, 'VpnPayment')
-        .withArgs(
-          agent.address,
-          'agent-456',
-          hours,
-          expectedAmount,
-          (v: bigint) => v > 0n, // timestamp
-        );
+        .withArgs(agent.address, 'agent-456', days, expectedAmount, (v: bigint) => v > 0n);
     });
 
-    it('reverts on 0 hours', async function () {
+    it('reverts on 0 days', async function () {
       const { payment, agent } = await loadFixture(deployFixture);
-      await expect(payment.connect(agent).pay('agent-1', 0)).to.be.revertedWithCustomError(payment, 'InvalidHours');
+      await expect(payment.connect(agent).pay('agent-1', 0)).to.be.revertedWithCustomError(payment, 'InvalidDuration');
     });
 
-    it('reverts on > 8760 hours', async function () {
+    it('reverts on > 365 days', async function () {
       const { payment, agent } = await loadFixture(deployFixture);
-      await expect(payment.connect(agent).pay('agent-1', 8761)).to.be.revertedWithCustomError(payment, 'InvalidHours');
+      await expect(payment.connect(agent).pay('agent-1', 366)).to.be.revertedWithCustomError(payment, 'InvalidDuration');
     });
 
     it('reverts on empty agentId', async function () {
@@ -93,24 +99,23 @@ describe('BlueVpnPayment', function () {
 
     it('reverts on insufficient USDC balance', async function () {
       const { payment, other } = await loadFixture(deployFixture);
-      // other has no USDC
       await expect(payment.connect(other).pay('agent-1', 1)).to.be.reverted;
     });
 
-    it('handles max hours (8760 = 1 year)', async function () {
-      const { payment, usdc, agent } = await loadFixture(deployFixture);
-      // 8760 * 10000 = 87,600,000 = 87.60 USDC — agent has 1000
-      await expect(payment.connect(agent).pay('agent-max', 8760)).to.emit(payment, 'VpnPayment');
+    it('handles max days (365 = 1 year)', async function () {
+      const { payment, agent } = await loadFixture(deployFixture);
+      // 365 * 33333 = 12,166,545 = ~$12.17 — agent has 1000 USDC
+      await expect(payment.connect(agent).pay('agent-max', 365)).to.emit(payment, 'VpnPayment');
     });
   });
 
   describe('quote()', function () {
-    it('returns correct cost', async function () {
+    it('returns correct cost for 30 days', async function () {
       const { payment } = await loadFixture(deployFixture);
-      expect(await payment.quote(720)).to.equal(720n * PRICE_PER_HOUR);
+      expect(await payment.quote(30)).to.equal(30n * PRICE_PER_DAY);
     });
 
-    it('returns 0 for 0 hours', async function () {
+    it('returns 0 for 0 days', async function () {
       const { payment } = await loadFixture(deployFixture);
       expect(await payment.quote(0)).to.equal(0n);
     });
@@ -119,16 +124,21 @@ describe('BlueVpnPayment', function () {
   describe('Admin', function () {
     it('owner can update price', async function () {
       const { payment } = await loadFixture(deployFixture);
-      const newPrice = 20_000n;
-      await expect(payment.setPricePerHour(newPrice))
+      const newPrice = 50000n;
+      await expect(payment.setPricePerDay(newPrice))
         .to.emit(payment, 'PriceUpdated')
-        .withArgs(PRICE_PER_HOUR, newPrice);
-      expect(await payment.pricePerHour()).to.equal(newPrice);
+        .withArgs(PRICE_PER_DAY, newPrice);
+      expect(await payment.pricePerDay()).to.equal(newPrice);
+    });
+
+    it('owner cannot set price to zero', async function () {
+      const { payment } = await loadFixture(deployFixture);
+      await expect(payment.setPricePerDay(0)).to.be.revertedWithCustomError(payment, 'ZeroPrice');
     });
 
     it('non-owner cannot update price', async function () {
       const { payment, agent } = await loadFixture(deployFixture);
-      await expect(payment.connect(agent).setPricePerHour(1)).to.be.revertedWithCustomError(payment, 'OwnableUnauthorizedAccount');
+      await expect(payment.connect(agent).setPricePerDay(1)).to.be.revertedWithCustomError(payment, 'OwnableUnauthorizedAccount');
     });
 
     it('owner can pause and unpause', async function () {

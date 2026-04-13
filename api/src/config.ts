@@ -22,9 +22,9 @@ export interface Config {
   // API
   port: number;
   databasePath: string;
-  pricePerHourUsdc: number;
-  minHours: number;
-  maxHours: number;
+  pricePerDayUsdc: number;
+  minDays: number;
+  maxDays: number;
 }
 
 function env(key: string, fallback?: string): string {
@@ -63,9 +63,9 @@ export function loadConfig(): Config {
     // API
     port: envInt('PORT', 3402),
     databasePath: env('DATABASE_PATH', './data/x402.db'),
-    pricePerHourUsdc: envInt('PRICE_PER_HOUR_USDC', 10000),
-    minHours: envInt('MIN_HOURS', 1),
-    maxHours: envInt('MAX_HOURS', 8760),
+    pricePerDayUsdc: envInt('PRICE_PER_DAY_USDC', 33333),
+    minDays: envInt('MIN_DAYS', 1),
+    maxDays: envInt('MAX_DAYS', 365),
   };
 }
 

@@ -4,8 +4,8 @@ import { BASE_RPC_URL, BASE_USDC_ADDRESS } from '../config.js';
 // ─── Contract ABI (only what we call) ───
 
 const PAYMENT_ABI = [
-  'function pay(string agentId, uint256 numHours) external',
-  'function quote(uint256 numHours) external view returns (uint256)',
+  'function pay(string agentId, uint256 numDays) external',
+  'function quote(uint256 numDays) external view returns (uint256)',
 ];
 
 const ERC20_ABI = [
@@ -25,7 +25,7 @@ export interface BasePaymentResult {
 export async function payOnBase(opts: {
   walletKey: string;
   agentId: string;
-  hours: number;
+  days: number;
   contractAddress: string;
   rpcUrl?: string;
   onProgress?: (step: string, detail: string) => void;
@@ -41,8 +41,8 @@ export async function payOnBase(opts: {
   const usdc = new ethers.Contract(BASE_USDC_ADDRESS, ERC20_ABI, wallet);
 
   // 2. Get quote
-  const amount: bigint = await payment.quote(opts.hours);
-  progress('quote', `Cost: ${ethers.formatUnits(amount, 6)} USDC for ${opts.hours} hours`);
+  const amount: bigint = await payment.quote(opts.days);
+  progress('quote', `Cost: ${ethers.formatUnits(amount, 6)} USDC for ${opts.days} hours`);
 
   // 3. Check USDC balance
   const balance: bigint = await usdc.balanceOf(wallet.address);
@@ -61,7 +61,7 @@ export async function payOnBase(opts: {
 
   // 5. Pay
   progress('pay', `Paying ${ethers.formatUnits(amount, 6)} USDC...`);
-  const tx = await payment.pay(opts.agentId, opts.hours);
+  const tx = await payment.pay(opts.agentId, opts.days);
   const receipt = await tx.wait(2); // wait for 2 confirmations
 
   progress('pay', `Payment confirmed: ${receipt.hash}`);

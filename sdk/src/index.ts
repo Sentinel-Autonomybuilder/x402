@@ -131,12 +131,12 @@ export async function connect(opts: ConnectOptions): Promise<ConnectResult> {
       throw new Error('X402_CONTRACT_ADDRESS not set. Set it in env.');
     }
 
-    progress('payment', `Paying for ${opts.payment.hours} hours on Base...`);
+    progress('payment', `Paying for ${opts.payment.days} days on Base...`);
 
     const result = await payOnBase({
       walletKey: opts.payment.walletKey,
       agentId,
-      hours: opts.payment.hours,
+      days: opts.payment.days,
       contractAddress,
       onProgress: progress,
     });
@@ -149,15 +149,15 @@ export async function connect(opts: ConnectOptions): Promise<ConnectResult> {
       throw new Error('X402_OPERATOR_USDC_ATA not set. Set it in env.');
     }
 
-    progress('payment', `Paying for ${opts.payment.hours} hours on Solana...`);
+    progress('payment', `Paying for ${opts.payment.days} days on Solana...`);
 
-    const pricePerHour = Math.round(parseFloat(pricing.pricePerHourUsdc) * 1e6);
+    const pricePerDay = Math.round(parseFloat(pricing.pricePerDayUsdc) * 1e6);
     const result = await payOnSolana({
       walletKey: opts.payment.walletKey,
       agentId,
-      hours: opts.payment.hours,
+      days: opts.payment.days,
       operatorUsdcAta: operatorAta,
-      pricePerHourUsdc: pricePerHour,
+      pricePerDayUsdc: pricePerDay,
       onProgress: progress,
     });
     paymentTxHash = result.txHash;
@@ -193,7 +193,7 @@ export async function connect(opts: ConnectOptions): Promise<ConnectResult> {
       connected: true,
       ip: vpnResult.vpnIp || 'unknown',
       country: vpnResult.country || opts.country || 'unknown',
-      expiresAt: new Date(Date.now() + opts.payment.hours * 3600_000).toISOString(),
+      expiresAt: new Date(Date.now() + opts.payment.days * 86_400_000).toISOString(),
       protocol: vpnResult.serviceType || 'unknown',
       sessionId: String(vpnResult.sessionId || ''),
       agentId,
@@ -210,7 +210,7 @@ export async function connect(opts: ConnectOptions): Promise<ConnectResult> {
       connected: false,
       ip: '',
       country: opts.country || '',
-      expiresAt: new Date(Date.now() + opts.payment.hours * 3600_000).toISOString(),
+      expiresAt: new Date(Date.now() + opts.payment.days * 86_400_000).toISOString(),
       protocol: '',
       sessionId: '',
       agentId,

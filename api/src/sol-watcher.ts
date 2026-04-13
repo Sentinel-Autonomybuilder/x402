@@ -11,7 +11,7 @@ import { MEMO_PREFIX } from './config.js';
 
 interface ParsedMemo {
   agentId: string;
-  hours: number;
+  days: number;
 }
 
 export function parseMemo(memo: string): ParsedMemo | null {
@@ -19,14 +19,14 @@ export function parseMemo(memo: string): ParsedMemo | null {
 
   const parts = memo.slice(MEMO_PREFIX.length).split(':');
   // Expected: agentId:hours:N
-  if (parts.length < 3 || parts[1] !== 'hours') return null;
+  if (parts.length < 3 || parts[1] !== 'days') return null;
 
   const agentId = parts[0];
-  const hours = parseInt(parts[2], 10);
+  const days = parseInt(parts[2], 10);
 
-  if (!agentId || isNaN(hours) || hours <= 0 || hours > 8760) return null;
+  if (!agentId || isNaN(days) || days <= 0 || days > 365) return null;
 
-  return { agentId, hours };
+  return { agentId, days };
 }
 
 // ─── Helius Webhook Handler ───
@@ -92,27 +92,27 @@ async function processHeliusEvent(
   const agent = db.getAgentById(parsed.agentId);
   if (!agent) {
     console.error(`[x402] Unknown agentId in Solana payment: ${parsed.agentId} (${signature})`);
-    db.insertPayment(signature, 'solana', parsed.agentId, null, parsed.hours, Math.round(usdcTransfer.tokenAmount * 1e6));
+    db.insertPayment(signature, 'solana', parsed.agentId, null, parsed.days, Math.round(usdcTransfer.tokenAmount * 1e6));
     db.updatePaymentStatus(signature, 'failed', { error: 'Agent not registered' });
     return;
   }
 
   // 5. Verify amount
   const usdcAtomic = Math.round(usdcTransfer.tokenAmount * 1e6);
-  const expectedAmount = parsed.hours * config.pricePerHourUsdc;
+  const expectedAmount = parsed.days * config.pricePerDayUsdc;
 
   if (usdcAtomic < expectedAmount) {
     console.error(`[x402] Solana amount mismatch: got ${usdcAtomic}, expected ${expectedAmount} (${signature})`);
-    db.insertPayment(signature, 'solana', parsed.agentId, agent.sentinel_address, parsed.hours, usdcAtomic);
+    db.insertPayment(signature, 'solana', parsed.agentId, agent.sentinel_address, parsed.days, usdcAtomic);
     db.updatePaymentStatus(signature, 'failed', { error: `Amount mismatch: ${usdcAtomic} < ${expectedAmount}` });
     return;
   }
 
   // 6. Record payment
-  const paymentId = db.insertPayment(signature, 'solana', parsed.agentId, agent.sentinel_address, parsed.hours, usdcAtomic);
+  const paymentId = db.insertPayment(signature, 'solana', parsed.agentId, agent.sentinel_address, parsed.days, usdcAtomic);
   db.updatePaymentStatus(signature, 'verified');
 
-  console.log(`[x402] Solana payment verified: ${parsed.agentId} → ${agent.sentinel_address}, ${parsed.hours}h, ${usdcAtomic} USDC atomic (${signature})`);
+  console.log(`[x402] Solana payment verified: ${parsed.agentId} → ${agent.sentinel_address}, ${parsed.days}h, ${usdcAtomic} USDC atomic (${signature})`);
 
   // 7. Provision on Sentinel
   if (!operator) {
@@ -121,7 +121,7 @@ async function processHeliusEvent(
   }
 
   try {
-    const result = await provisionAgent(operator, db, config, agent.sentinel_address, parsed.hours, signature);
+    const result = await provisionAgent(operator, db, config, agent.sentinel_address, parsed.days, signature);
     console.log(`[x402] Solana agent provisioned: ${agent.sentinel_address} on sub ${result.subscriptionId}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

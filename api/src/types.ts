@@ -93,8 +93,8 @@ export interface HealthResponse {
 }
 
 export interface PricingResponse {
-  pricePerHourUsdc: string;
-  minHours: number;
-  maxHours: number;
+  pricePerDayUsdc: string;
+  minDays: number;
+  maxDays: number;
   chains: string[];
 }

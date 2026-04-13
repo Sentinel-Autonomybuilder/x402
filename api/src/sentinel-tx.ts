@@ -10,7 +10,7 @@ const SDK_PATH = '../../../Sentinel SDK/js-sdk';
 
 const FEE_GRANT_BUDGET = 5_000_000;         // 5 P2P gas (~25 session starts)
 const ALLOCATION_BYTES = 1_000_000_000_000;  // 1 TB (unlimited for time-based)
-const EXPIRY_BUFFER_MS = 86_400_000;         // 24h buffer beyond paid hours
+const EXPIRY_BUFFER_MS = 86_400_000;         // 24h buffer beyond paid days
 
 // ─── Types ───
 
@@ -31,7 +31,7 @@ export async function provisionAgent(
   db: Db,
   config: Config,
   agentSentinelAddr: string,
-  hours: number,
+  days: number,
   paymentTxHash: string,
 ): Promise<ProvisionResult> {
   // 1. Atomic: grab a subscription slot (prevents race conditions)
@@ -49,7 +49,7 @@ export async function provisionAgent(
   const { buildMsgShareSubscription } = await import(`${SDK_PATH}/protocol/messages.js`);
   const { buildFeeGrantMsg } = await import(`${SDK_PATH}/chain/fee-grants.js`);
 
-  const expirationDate = new Date(Date.now() + hours * 3600_000 + EXPIRY_BUFFER_MS);
+  const expirationDate = new Date(Date.now() + days * 86_400_000 + EXPIRY_BUFFER_MS);
 
   const shareMsg = buildMsgShareSubscription({
     from: operator.address,
@@ -66,7 +66,7 @@ export async function provisionAgent(
   // 3. Broadcast both in one atomic TX
   const result = await operator.safeBroadcast(
     [shareMsg, grantMsg],
-    `x402: provision ${agentSentinelAddr} for ${hours}h`,
+    `x402: provision ${agentSentinelAddr} for ${days}d`,
   );
 
   if (result.code !== 0) {
