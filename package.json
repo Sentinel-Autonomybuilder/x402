@@ -1,0 +1,18 @@
+{
+  "name": "x402",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "test:server": "npx tsx test/test-server.ts",
+    "test:sentinel": "npx tsx test/test-sentinel.ts",
+    "install:all": "cd server && npm install && cd ../client && npm install"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  },
+  "dependencies": {
+    "blue-js-sdk": "^2.0.3"
+  }
+}

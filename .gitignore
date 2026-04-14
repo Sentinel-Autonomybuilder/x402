@@ -21,3 +21,8 @@ desktop.ini
 # Logs
 *.log
 CLAUDE.md
+
+# Secrets
+wallets.env
+*.key
+*.secret

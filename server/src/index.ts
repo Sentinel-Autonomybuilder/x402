@@ -2,7 +2,10 @@ import { config } from 'dotenv';
 import express from 'express';
 import { paymentMiddleware, x402ResourceServer } from '@x402/express';
 import { ExactEvmScheme } from '@x402/evm/exact/server';
-import { HTTPFacilitatorClient } from '@x402/core/server';
+import { createFacilitatorConfig } from '@coinbase/x402';
+import { HTTPFacilitatorClient, type FacilitatorConfig } from '@x402/core/server';
+import { initSentinel, provisionAgent, checkAgentStatus } from './sentinel.js';
+import { createSelfHostedFacilitator, startFacilitatorServer } from './facilitator.js';
 
 config();
 
@@ -14,26 +17,48 @@ if (!operatorAddress) {
   process.exit(1);
 }
 
-const facilitatorUrl = process.env.FACILITATOR_URL || 'https://x402.org/facilitator';
 const port = parseInt(process.env.PORT || '4020', 10);
 
-// ─── Pricing ───
-// $0.033/day = 33333 USDC atomic units
-// $1/month = 999990 USDC atomic units
-// Amounts are strings in USDC atomic units (6 decimals)
+// Network: eip155:8453 = Base mainnet (default), eip155:84532 = Base Sepolia (testnet)
+const network = (process.env.BASE_NETWORK || 'eip155:8453') as `${string}:${string}`;
+const networkLabel = network === 'eip155:8453' ? 'Base mainnet' : 'Base Sepolia (testnet)';
 
-const PRICES = {
-  oneDay: '33333',      // $0.033
-  sevenDays: '233331',  // $0.233
-  thirtyDays: '999990', // $1.00
-};
+// ─── x402 Facilitator Setup ───
+// Priority: 1) Self-hosted (FACILITATOR_PRIVATE_KEY) — fully decentralized
+//           2) CDP (CDP_API_KEY_ID) — Coinbase hosted
+//           3) Public x402.org — Sepolia only
 
-// ─── x402 Setup ───
+let facilitatorConfig: FacilitatorConfig;
+const facilitatorPort = parseInt(process.env.FACILITATOR_PORT || '4021', 10);
 
-const facilitator = new HTTPFacilitatorClient({ url: facilitatorUrl });
+if (process.env.FACILITATOR_PRIVATE_KEY) {
+  // Self-hosted: we run our own facilitator, no third party dependency
+  const facServer = startFacilitatorServer(
+    process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`,
+    network,
+    facilitatorPort,
+  );
+  facilitatorConfig = { url: facServer.url };
+} else if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
+  facilitatorConfig = createFacilitatorConfig(
+    process.env.CDP_API_KEY_ID,
+    process.env.CDP_API_KEY_SECRET,
+  );
+  console.log('  Facilitator: CDP (api.cdp.coinbase.com)');
+} else if (network === 'eip155:84532') {
+  facilitatorConfig = { url: 'https://x402.org/facilitator' };
+  console.log('  Facilitator: x402.org (Sepolia only)');
+} else {
+  console.error('Base mainnet requires either:');
+  console.error('  FACILITATOR_PRIVATE_KEY — self-hosted (recommended)');
+  console.error('  CDP_API_KEY_ID + CDP_API_KEY_SECRET — Coinbase hosted');
+  process.exit(1);
+}
+
+const facilitator = new HTTPFacilitatorClient(facilitatorConfig);
 
 const resourceServer = new x402ResourceServer(facilitator)
-  .register('eip155:8453', new ExactEvmScheme());  // Base mainnet
+  .register(network, new ExactEvmScheme());
 
 // ─── Express App ───
 
@@ -52,7 +77,7 @@ app.use(
         accepts: [{
           scheme: 'exact',
           price: '$0.033',
-          network: 'eip155:8453',
+          network,
           payTo: operatorAddress,
         }],
         description: '1 day of private VPN access through 900+ decentralized nodes',
@@ -62,7 +87,7 @@ app.use(
         accepts: [{
           scheme: 'exact',
           price: '$0.233',
-          network: 'eip155:8453',
+          network,
           payTo: operatorAddress,
         }],
         description: '7 days of private VPN access',
@@ -72,7 +97,7 @@ app.use(
         accepts: [{
           scheme: 'exact',
           price: '$1.00',
-          network: 'eip155:8453',
+          network,
           payTo: operatorAddress,
         }],
         description: '30 days of private VPN access',
@@ -86,20 +111,33 @@ app.use(
 // ─── Route Handlers (only reached after payment is settled) ───
 
 app.post('/vpn/connect/1day', async (req, res) => {
-  // USDC is already in our wallet at this point.
-  // Provision VPN access on Sentinel and return session details.
-  const result = await provisionVpn(1, req.body);
-  res.json(result);
+  try {
+    const result = await provisionVpn(1, req.body);
+    res.json(result);
+  } catch (err) {
+    console.error('[x402] Provision failed:', (err as Error).message);
+    res.status(500).json({ error: 'Provisioning failed', detail: (err as Error).message });
+  }
 });
 
 app.post('/vpn/connect/7days', async (req, res) => {
-  const result = await provisionVpn(7, req.body);
-  res.json(result);
+  try {
+    const result = await provisionVpn(7, req.body);
+    res.json(result);
+  } catch (err) {
+    console.error('[x402] Provision failed:', (err as Error).message);
+    res.status(500).json({ error: 'Provisioning failed', detail: (err as Error).message });
+  }
 });
 
 app.post('/vpn/connect/30days', async (req, res) => {
-  const result = await provisionVpn(30, req.body);
-  res.json(result);
+  try {
+    const result = await provisionVpn(30, req.body);
+    res.json(result);
+  } catch (err) {
+    console.error('[x402] Provision failed:', (err as Error).message);
+    res.status(500).json({ error: 'Provisioning failed', detail: (err as Error).message });
+  }
 });
 
 // ─── Free Endpoints (no payment required) ───
@@ -107,13 +145,13 @@ app.post('/vpn/connect/30days', async (req, res) => {
 app.get('/pricing', (_req, res) => {
   res.json({
     protocol: 'x402',
-    network: 'eip155:8453',
+    network,
     asset: 'USDC',
     payTo: operatorAddress,
     tiers: {
-      '1day': { price: '$0.033', amount: PRICES.oneDay, endpoint: '/vpn/connect/1day' },
-      '7days': { price: '$0.233', amount: PRICES.sevenDays, endpoint: '/vpn/connect/7days' },
-      '30days': { price: '$1.00', amount: PRICES.thirtyDays, endpoint: '/vpn/connect/30days' },
+      '1day': { price: '$0.033', endpoint: '/vpn/connect/1day' },
+      '7days': { price: '$0.233', endpoint: '/vpn/connect/7days' },
+      '30days': { price: '$1.00', endpoint: '/vpn/connect/30days' },
     },
     nodes: '900+',
     countries: '70+',
@@ -125,9 +163,17 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
 
+// Agent status check — free, no payment needed
+app.get('/agent/:sentinelAddr', async (req, res) => {
+  try {
+    const status = await checkAgentStatus(req.params.sentinelAddr);
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 // ─── VPN Provisioning ───
-// After x402 payment is settled, provision access on Sentinel chain.
-// This is where MsgShareSubscription + MsgGrantAllowance happen.
 
 async function provisionVpn(days: number, body: Record<string, unknown>) {
   const sentinelAddr = body.sentinelAddr as string;
@@ -139,30 +185,31 @@ async function provisionVpn(days: number, body: Record<string, unknown>) {
     };
   }
 
-  // TODO: Wire Sentinel provisioning (MsgShareSubscription + MsgGrantAllowance)
-  // For now, return what the agent needs to connect
-  console.log(`[x402] Paid! Provisioning ${days} days for ${sentinelAddr}`);
-
-  return {
-    provisioned: true,
-    sentinelAddr,
-    days,
-    expiresAt: new Date(Date.now() + days * 86_400_000).toISOString(),
-    instructions: 'Use blue-ai-connect with your mnemonic to establish VPN tunnel. Fee grant active — zero gas on Sentinel.',
-  };
+  console.log(`[x402] Payment settled. Provisioning ${days} days for ${sentinelAddr}...`);
+  const result = await provisionAgent(sentinelAddr, days);
+  return result;
 }
 
 // ─── Start ───
 
-app.listen(port, () => {
+async function start() {
   console.log('');
   console.log('══════════════════════════════════════');
-  console.log('  x402 VPN Server — Real Protocol');
+  console.log('  x402 VPN Server');
   console.log('══════════════════════════════════════');
+
+  try {
+    await initSentinel();
+  } catch (err) {
+    console.error(`  Sentinel:    FAILED — ${(err as Error).message}`);
+    console.error('  Server will start but provisioning will fail.');
+    console.error('  Set SENTINEL_OPERATOR_MNEMONIC in .env');
+  }
+
   console.log(`  Port:        ${port}`);
   console.log(`  Operator:    ${operatorAddress}`);
-  console.log(`  Facilitator: ${facilitatorUrl}`);
-  console.log(`  Network:     Base mainnet (eip155:8453)`);
+  console.log(`  Facilitator: ${facilitatorConfig.url}`);
+  console.log(`  Network:     ${networkLabel} (${network})`);
   console.log('');
   console.log('  x402 Endpoints (payment required):');
   console.log('    POST /vpn/connect/1day    $0.033');
@@ -172,5 +219,12 @@ app.listen(port, () => {
   console.log('  Free Endpoints:');
   console.log('    GET  /pricing');
   console.log('    GET  /health');
+  console.log('    GET  /agent/:sentinelAddr');
   console.log('══════════════════════════════════════');
-});
+
+  app.listen(port, () => {
+    console.log(`\n  Listening on http://localhost:${port}\n`);
+  });
+}
+
+start();

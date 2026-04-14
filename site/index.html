@@ -621,6 +621,7 @@ footer a:hover { color: white; }
     <div class="links">
       <a href="#pricing">Pricing</a>
       <a href="#flow">How It Works</a>
+      <a href="#code">Integration</a>
       <a href="#security">Security</a>
       <a href="https://github.com/Sentinel-Autonomybuilder/x402" target="_blank">GitHub</a>
     </div>
@@ -630,29 +631,28 @@ footer a:hover { color: white; }
 <!-- ─── Hero ─── -->
 <section class="hero">
   <div class="container">
-    <div class="protocol-badge fade-in">Live on Base Mainnet</div>
+    <div class="protocol-badge fade-in">Live on Base Mainnet &middot; HTTP 402 Protocol</div>
     <h1 class="fade-in">Private internet<br>for <span class="highlight">AI agents</span></h1>
-    <p class="subtitle fade-in">Pay USDC on Base or Solana. Connect to 900+ decentralized VPN nodes in 70+ countries. One function call. No KYC. No accounts.</p>
+    <p class="subtitle fade-in">Your agent sends a request. Gets HTTP 402. Pays USDC automatically. VPN provisioned on 900+ decentralized nodes. One fetch call. No accounts. No KYC. Everything on-chain.</p>
 
     <div class="code-preview fade-in">
       <div class="code-block">
         <div class="bar">
           <div class="dots"><span></span><span></span><span></span></div>
-          <div class="label">agent.ts</div>
+          <div class="label">agent.ts &mdash; that's it, the agent is private</div>
         </div>
-        <pre><code><span class="kw">import</span> { <span class="fn">connect</span> } <span class="kw">from</span> <span class="str">'x402-connect'</span><span class="op">;</span>
+        <pre><code><span class="kw">import</span> { <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
 
-<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
-  <span class="prop">payment</span><span class="op">:</span> {
-    <span class="prop">chain</span><span class="op">:</span> <span class="str">'base'</span><span class="op">,</span>
-    <span class="prop">walletKey</span><span class="op">:</span> process<span class="op">.</span>env<span class="op">.</span>EVM_KEY<span class="op">,</span>
-    <span class="prop">days</span><span class="op">:</span> <span class="num">30</span><span class="op">,</span>       <span class="cm">// $1.00</span>
-  }<span class="op">,</span>
+<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
+
+<span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">paidFetch</span>(<span class="str">'https://x402.blue/vpn/connect/30days'</span><span class="op">,</span> {
+  <span class="prop">method</span><span class="op">:</span> <span class="str">'POST'</span><span class="op">,</span>
+  <span class="prop">headers</span><span class="op">:</span> { <span class="str">'Content-Type'</span><span class="op">:</span> <span class="str">'application/json'</span> }<span class="op">,</span>
+  <span class="prop">body</span><span class="op">:</span> JSON<span class="op">.</span><span class="fn">stringify</span>({ <span class="prop">sentinelAddr</span><span class="op">:</span> <span class="str">'sent1...'</span> })<span class="op">,</span>
 })<span class="op">;</span>
-
-<span class="cm">// vpn.connected = true</span>
-<span class="cm">// vpn.ip = '45.152.243.12'</span>
-<span class="cm">// vpn.country = 'Germany'</span></code></pre>
+<span class="cm">// 402 &rarr; auto-signs USDC transfer &rarr; settled on Base &rarr; VPN provisioned</span>
+<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
+<span class="cm">// { subscriptionId, sentinelTxHash, expiresAt, feeGranted: true }</span></code></pre>
       </div>
     </div>
   </div>
@@ -665,30 +665,28 @@ footer a:hover { color: white; }
   <div class="container">
     <div class="section-label">Pricing</div>
     <h2>Pay per day. No subscriptions.</h2>
-    <p class="desc">Agents pay upfront for exactly the days they need. One payment, one transaction, done. Minimum 1 day.</p>
+    <p class="desc">Agents pay upfront for exactly the days they need. USDC on Base, settled automatically by the x402 protocol. Minimum 1 day.</p>
 
     <div class="pricing-card">
       <div class="left">
         <h3>Unlimited VPN</h3>
         <div class="price">$1<span>/month</span></div>
-        <div class="price-sub">$0.033 per day &middot; Billed in USDC</div>
+        <div class="price-sub">$0.033 per day &middot; USDC on Base</div>
         <ul class="features">
           <li>900+ nodes in 70+ countries</li>
           <li>Unlimited bandwidth</li>
           <li>WireGuard + V2Ray tunnels</li>
-          <li>No KYC, no accounts</li>
-          <li>Pay on Base or Solana</li>
+          <li>Zero gas on Sentinel (fee granted)</li>
+          <li>HTTP 402 &mdash; standard protocol</li>
         </ul>
       </div>
       <div class="right">
         <table class="pricing-table">
-          <thead><tr><th>Duration</th><th>Cost</th></tr></thead>
+          <thead><tr><th>Endpoint</th><th>Cost</th></tr></thead>
           <tbody>
-            <tr><td>1 day</td><td>$0.033</td></tr>
-            <tr><td>7 days</td><td>$0.23</td></tr>
-            <tr><td>30 days</td><td>$1.00</td></tr>
-            <tr><td>90 days</td><td>$3.00</td></tr>
-            <tr><td>365 days</td><td>$12.17</td></tr>
+            <tr><td>/vpn/connect/1day</td><td>$0.033</td></tr>
+            <tr><td>/vpn/connect/7days</td><td>$0.233</td></tr>
+            <tr><td>/vpn/connect/30days</td><td>$1.00</td></tr>
           </tbody>
         </table>
       </div>
@@ -702,33 +700,33 @@ footer a:hover { color: white; }
 <section id="flow">
   <div class="container">
     <div class="section-label">How It Works</div>
-    <h2>Register. Pay. Connect.</h2>
-    <p class="desc">Three steps from zero to private internet. The entire flow takes under 60 seconds.</p>
+    <h2>Request. Pay. Connect.</h2>
+    <p class="desc">The x402 protocol handles everything. Agent sends one fetch call &mdash; payment, settlement, and VPN provisioning happen automatically.</p>
 
     <div class="flow-steps">
       <div class="flow-step">
         <div class="step-num">1</div>
         <div class="step-content">
-          <h4>Agent registers</h4>
-          <p>Agent creates a Sentinel wallet (offline, free) and registers its address with our API. Gets back an agentId. Sentinel address never appears on Base or Solana.</p>
-          <span class="tag tag-agent">Agent</span>
+          <h4>Agent sends request</h4>
+          <p><code>POST /vpn/connect/30days</code> with a Sentinel address in the body. Server returns <strong>HTTP 402 Payment Required</strong> with a <code>PAYMENT-REQUIRED</code> header containing USDC amount, payTo address, and network (Base).</p>
+          <span class="tag tag-agent">Agent &rarr; Server</span>
         </div>
       </div>
 
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-content">
-          <h4>Agent pays USDC</h4>
-          <p>Calls <code>contract.pay(agentId, 30)</code> on Base. USDC transfers to operator wallet. VpnPayment event emitted on-chain. That's the only transaction the agent sends.</p>
-          <span class="tag tag-chain">Base / Solana</span>
+          <h4>Payment signed automatically</h4>
+          <p><code>@x402/fetch</code> reads the 402 response, signs an EIP-3009 <code>transferWithAuthorization</code> for the exact USDC amount, and resends the request with a <code>PAYMENT-SIGNATURE</code> header. The agent's EVM key never leaves the agent.</p>
+          <span class="tag tag-chain">Base &middot; USDC</span>
         </div>
       </div>
 
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-content">
-          <h4>Backend provisions access</h4>
-          <p>Our backend sees the payment event, resolves agentId to the Sentinel address, and sends one atomic transaction: MsgShareSubscription + MsgGrantAllowance. Agent now has access and pays zero gas on Sentinel.</p>
+          <h4>Facilitator settles on-chain</h4>
+          <p>Our self-hosted facilitator verifies the EIP-3009 signature and settles the USDC transfer on Base. Fully decentralized &mdash; no Coinbase, no third party. Payment confirmed in ~2 seconds.</p>
           <span class="tag tag-backend">Automatic</span>
         </div>
       </div>
@@ -736,8 +734,8 @@ footer a:hover { color: white; }
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-content">
-          <h4>Agent connects to VPN</h4>
-          <p>Agent starts a session on Sentinel (zero gas, fee granted), handshakes directly with a VPN node, and establishes an encrypted tunnel. We never see the handshake, the tunnel credentials, or the traffic.</p>
+          <h4>VPN provisioned on Sentinel</h4>
+          <p>Server sends one atomic transaction: <code>MsgShareSubscription</code> + <code>MsgGrantAllowance</code>. Agent is added to our plan with a fee grant &mdash; zero gas on Sentinel. Agent can now start VPN sessions on any of 900+ nodes, handshaking directly with the node. We never see the tunnel or the traffic.</p>
           <span class="tag tag-agent">Agent &harr; Node</span>
         </div>
       </div>
@@ -751,53 +749,81 @@ footer a:hover { color: white; }
 <section id="code">
   <div class="container">
     <div class="section-label">Integration</div>
-    <h2>One function call</h2>
-    <p class="desc">Install the SDK, call connect(), be private. The SDK handles wallet creation, registration, payment, polling, and VPN tunnel establishment.</p>
+    <h2>One fetch call</h2>
+    <p class="desc">Wrap your fetch with <code>@x402/fetch</code>. It handles 402 responses, USDC signing, and payment settlement automatically. Your agent just makes HTTP requests.</p>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
         <div class="label">Install</div>
       </div>
-      <pre><code><span class="fn">npm install</span> x402-connect</code></pre>
+      <pre><code><span class="fn">npm install</span> @x402/fetch</code></pre>
     </div>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Connect on Base</div>
+        <div class="label">Buy 30 days of VPN &mdash; Base mainnet</div>
       </div>
-      <pre><code><span class="kw">import</span> { <span class="fn">connect</span> } <span class="kw">from</span> <span class="str">'x402-connect'</span><span class="op">;</span>
+      <pre><code><span class="kw">import</span> { <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
 
-<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
-  <span class="prop">payment</span><span class="op">:</span> {
-    <span class="prop">chain</span><span class="op">:</span> <span class="str">'base'</span><span class="op">,</span>
-    <span class="prop">walletKey</span><span class="op">:</span> process<span class="op">.</span>env<span class="op">.</span>EVM_PRIVATE_KEY<span class="op">,</span>
-    <span class="prop">days</span><span class="op">:</span> <span class="num">30</span><span class="op">,</span>
-  }<span class="op">,</span>
-  <span class="prop">country</span><span class="op">:</span> <span class="str">'US'</span><span class="op">,</span>  <span class="cm">// optional</span>
+<span class="cm">// Wrap fetch with your EVM private key &mdash; key never leaves the agent</span>
+<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
+
+<span class="cm">// Request VPN access &mdash; 402 &rarr; auto-pay &rarr; provisioned</span>
+<span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">paidFetch</span>(<span class="str">'https://x402.blue/vpn/connect/30days'</span><span class="op">,</span> {
+  <span class="prop">method</span><span class="op">:</span> <span class="str">'POST'</span><span class="op">,</span>
+  <span class="prop">headers</span><span class="op">:</span> { <span class="str">'Content-Type'</span><span class="op">:</span> <span class="str">'application/json'</span> }<span class="op">,</span>
+  <span class="prop">body</span><span class="op">:</span> JSON<span class="op">.</span><span class="fn">stringify</span>({ <span class="prop">sentinelAddr</span><span class="op">:</span> <span class="str">'sent1abc...'</span> })<span class="op">,</span>
 })<span class="op">;</span>
 
-console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">.</span>connected)<span class="op">;</span>   <span class="cm">// true</span>
-console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">.</span>ip)<span class="op">;</span>          <span class="cm">// '45.152.243.12'</span>
-console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">.</span>expiresAt)<span class="op">;</span>   <span class="cm">// '2026-05-12T...'</span>
+<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
+<span class="cm">// {</span>
+<span class="cm">//   subscriptionId: '1170850',</span>
+<span class="cm">//   sentinelTxHash: '2C1CFE...5975',</span>
+<span class="cm">//   expiresAt: '2026-05-14T...',</span>
+<span class="cm">//   feeGranted: true  &larr; agent pays 0 gas on Sentinel</span>
+<span class="cm">// }</span></code></pre>
+    </div>
 
-<span class="cm">// Save this — needed to reconnect without paying again</span>
-console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">.</span>sentinelMnemonic)<span class="op">;</span></code></pre>
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">What happens under the hood</div>
+      </div>
+      <pre><code><span class="cm">// 1. Agent sends POST /vpn/connect/30days</span>
+<span class="cm">//    &rarr; Server returns HTTP 402 + PAYMENT-REQUIRED header</span>
+<span class="cm">//</span>
+<span class="cm">// 2. @x402/fetch reads the 402 response:</span>
+<span class="cm">//    { scheme: 'exact', network: 'eip155:8453',</span>
+<span class="cm">//      amount: '1000000', asset: '0x8335...USDC',</span>
+<span class="cm">//      payTo: '0x605C...85B' }</span>
+<span class="cm">//</span>
+<span class="cm">// 3. Signs EIP-3009 transferWithAuthorization</span>
+<span class="cm">//    (USDC native, no approve needed)</span>
+<span class="cm">//</span>
+<span class="cm">// 4. Resends request with PAYMENT-SIGNATURE header</span>
+<span class="cm">//    &rarr; Facilitator verifies + settles USDC on Base</span>
+<span class="cm">//    &rarr; Server provisions agent on Sentinel chain</span>
+<span class="cm">//    &rarr; Returns subscription + fee grant details</span></code></pre>
     </div>
 
     <div class="code-block">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Connect on Solana</div>
+        <div class="label">Check pricing (free, no payment)</div>
       </div>
-      <pre><code><span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
-  <span class="prop">payment</span><span class="op">:</span> {
-    <span class="prop">chain</span><span class="op">:</span> <span class="str">'solana'</span><span class="op">,</span>
-    <span class="prop">walletKey</span><span class="op">:</span> process<span class="op">.</span>env<span class="op">.</span>SOLANA_SECRET_KEY<span class="op">,</span>
-    <span class="prop">days</span><span class="op">:</span> <span class="num">7</span><span class="op">,</span>
-  }<span class="op">,</span>
-})<span class="op">;</span></code></pre>
+      <pre><code><span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'https://x402.blue/pricing'</span>)<span class="op">;</span>
+<span class="cm">// {</span>
+<span class="cm">//   protocol: 'x402', network: 'eip155:8453', asset: 'USDC',</span>
+<span class="cm">//   tiers: {</span>
+<span class="cm">//     '1day':  { price: '$0.033',  endpoint: '/vpn/connect/1day' },</span>
+<span class="cm">//     '7days': { price: '$0.233',  endpoint: '/vpn/connect/7days' },</span>
+<span class="cm">//     '30days':{ price: '$1.00',   endpoint: '/vpn/connect/30days' }</span>
+<span class="cm">//   },</span>
+<span class="cm">//   nodes: '900+', countries: '70+',</span>
+<span class="cm">//   protocols: ['wireguard', 'v2ray']</span>
+<span class="cm">// }</span></code></pre>
     </div>
   </div>
 </section>
@@ -813,20 +839,20 @@ console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">
 
     <div class="security-grid">
       <div class="security-item">
-        <h4>Agent controls the session</h4>
-        <p>Agent's Sentinel private key signs MsgStartSession. Only the agent can start, extend, or end its VPN session.</p>
+        <h4>EVM key never leaves the agent</h4>
+        <p>EIP-3009 <code>transferWithAuthorization</code> is signed locally. The facilitator only receives the signature, never the private key. Standard USDC, no approve needed.</p>
       </div>
       <div class="security-item">
-        <h4>Tunnel is direct</h4>
-        <p>WireGuard/V2Ray handshake is agent-to-node. We never see the tunnel credentials, the encryption keys, or the traffic.</p>
+        <h4>Tunnel is agent-to-node</h4>
+        <p>WireGuard/V2Ray handshake is direct between the agent and the VPN node. We never see the tunnel credentials, the encryption keys, or the traffic.</p>
       </div>
       <div class="security-item">
-        <h4>Payment is on-chain</h4>
-        <p>USDC payment on Base or Solana. Fully auditable. No invoices, no billing systems, no chargebacks.</p>
+        <h4>Self-hosted facilitator</h4>
+        <p>No Coinbase. No third party. Our facilitator verifies EIP-3009 signatures and settles USDC on Base. Fully auditable on-chain. Open source.</p>
       </div>
       <div class="security-item">
-        <h4>No lock-in</h4>
-        <p>Agent's Sentinel key works with any operator, any plan, any node. Leave anytime. Use the same key with a different provider.</p>
+        <h4>Zero gas on Sentinel</h4>
+        <p>Agent gets a fee grant &mdash; zero gas to start VPN sessions. The Sentinel key works with any operator, any plan, any node. No lock-in.</p>
       </div>
     </div>
   </div>
@@ -838,32 +864,34 @@ console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">
 <section id="chains">
   <div class="container">
     <div class="section-label">Supported Chains</div>
-    <h2>Pay where you are</h2>
-    <p class="desc">Agent pays on whichever chain it already uses. We handle everything else.</p>
+    <h2>Live on Base mainnet</h2>
+    <p class="desc">USDC payments settled via EIP-3009 <code>transferWithAuthorization</code> &mdash; no custom contract, no approve step. Native USDC on Base.</p>
 
     <div class="contract-box">
       <div>
-        <div class="contract-label">Payment Contract &middot; Base Mainnet</div>
-        <div class="contract-addr">0x923F41eb162d4F7D274CE8cE8b8178883E7E2196</div>
+        <div class="contract-label">USDC on Base &middot; eip155:8453</div>
+        <div class="contract-addr">0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913</div>
       </div>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('0x923F41eb162d4F7D274CE8cE8b8178883E7E2196').then(()=>this.textContent='Copied').catch(()=>{})">Copy</button>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913').then(()=>this.textContent='Copied').catch(()=>{})">Copy</button>
     </div>
 
     <div class="chain-cards">
       <div class="chain-card">
         <div class="chain-name">Base</div>
-        <div class="chain-sub">EVM L2 &middot; Smart Contract</div>
-        <div class="chain-stat"><span class="label">Payment method</span><span class="val">USDC via contract</span></div>
+        <div class="chain-sub">EVM L2 &middot; EIP-3009 (no approve)</div>
+        <div class="chain-stat"><span class="label">Payment</span><span class="val">USDC transferWithAuth</span></div>
+        <div class="chain-stat"><span class="label">Settlement</span><span class="val">Self-hosted facilitator</span></div>
         <div class="chain-stat"><span class="label">Finality</span><span class="val">~2 seconds</span></div>
-        <div class="chain-stat"><span class="label">Agent gas cost</span><span class="val">~$0.003</span></div>
-        <div class="chain-stat"><span class="label">Status</span><span class="val" style="color: var(--green);">Live</span></div>
+        <div class="chain-stat"><span class="label">Agent gas</span><span class="val">$0 (facilitator pays)</span></div>
+        <div class="chain-stat"><span class="label">Status</span><span class="val" style="color: var(--green);">Live on mainnet</span></div>
       </div>
       <div class="chain-card">
         <div class="chain-name">Solana</div>
         <div class="chain-sub">SPL Transfer + Memo</div>
-        <div class="chain-stat"><span class="label">Payment method</span><span class="val">USDC transfer + memo</span></div>
+        <div class="chain-stat"><span class="label">Payment</span><span class="val">USDC SPL + memo</span></div>
+        <div class="chain-stat"><span class="label">Settlement</span><span class="val">Helius webhook</span></div>
         <div class="chain-stat"><span class="label">Finality</span><span class="val">~400ms</span></div>
-        <div class="chain-stat"><span class="label">Agent gas cost</span><span class="val">~$0.001</span></div>
+        <div class="chain-stat"><span class="label">Agent gas</span><span class="val">~$0.001</span></div>
         <div class="chain-stat"><span class="label">Status</span><span class="val" style="color: var(--orange);">Coming soon</span></div>
       </div>
     </div>
@@ -877,33 +905,48 @@ console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">
   <div class="container">
     <div class="section-label">API Reference</div>
     <h2>Endpoints</h2>
+    <p class="desc">All <code>/vpn/connect/*</code> routes return HTTP 402 until USDC payment is settled. Free endpoints require no payment.</p>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Registration</div>
+        <div class="label">x402-Protected (payment required)</div>
       </div>
-      <pre><code><span class="fn">POST</span> /api/register
+      <pre><code><span class="fn">POST</span> /vpn/connect/1day     <span class="cm">$0.033 USDC</span>
+<span class="fn">POST</span> /vpn/connect/7days    <span class="cm">$0.233 USDC</span>
+<span class="fn">POST</span> /vpn/connect/30days   <span class="cm">$1.00  USDC</span>
+
 <span class="cm">Body:</span> { <span class="str">"sentinelAddr"</span>: <span class="str">"sent1..."</span> }
-<span class="cm">Returns:</span> { <span class="str">"agentId"</span>: <span class="str">"uuid"</span>, <span class="str">"sentinelAddr"</span>: <span class="str">"sent1..."</span> }</code></pre>
+<span class="cm">Without payment &rarr;</span> <span class="num">402</span> + PAYMENT-REQUIRED header
+<span class="cm">With payment    &rarr;</span> <span class="num">200</span> + provisioning result</code></pre>
     </div>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Check Payment Status</div>
+        <div class="label">Free endpoints (no payment)</div>
       </div>
-      <pre><code><span class="fn">GET</span> /api/payment/:txHash
-<span class="cm">Returns:</span> { <span class="str">"status"</span>: <span class="str">"allocated"</span>, <span class="str">"sentinelTxHash"</span>: <span class="str">"..."</span> }</code></pre>
+      <pre><code><span class="fn">GET</span> /pricing              <span class="cm">Tiers, network, asset info</span>
+<span class="fn">GET</span> /health               <span class="cm">Server status + uptime</span>
+<span class="fn">GET</span> /agent/:sentinelAddr  <span class="cm">Check subscription status</span></code></pre>
     </div>
 
     <div class="code-block">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Pricing</div>
+        <div class="label">402 Response &mdash; PAYMENT-REQUIRED header (base64 JSON)</div>
       </div>
-      <pre><code><span class="fn">GET</span> /api/pricing
-<span class="cm">Returns:</span> { <span class="str">"pricePerDayUsdc"</span>: <span class="str">"0.033333"</span>, <span class="str">"minDays"</span>: <span class="num">1</span>, <span class="str">"maxDays"</span>: <span class="num">365</span> }</code></pre>
+      <pre><code>{
+  <span class="str">"x402Version"</span>: <span class="num">2</span>,
+  <span class="str">"accepts"</span>: [{
+    <span class="str">"scheme"</span>: <span class="str">"exact"</span>,
+    <span class="str">"network"</span>: <span class="str">"eip155:8453"</span>,
+    <span class="str">"amount"</span>: <span class="str">"33000"</span>,
+    <span class="str">"asset"</span>: <span class="str">"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"</span>,
+    <span class="str">"payTo"</span>: <span class="str">"0x605C...85B"</span>,
+    <span class="str">"maxTimeoutSeconds"</span>: <span class="num">300</span>
+  }]
+}</code></pre>
     </div>
   </div>
 </section>
@@ -912,10 +955,11 @@ console<span class="op">.</span><span class="fn">log</span>(vpn<span class="op">
 <footer>
   <div class="footer-links">
     <a href="https://github.com/Sentinel-Autonomybuilder/x402" target="_blank">GitHub</a>
-    <a href="https://www.npmjs.com/package/x402-connect" target="_blank">npm</a>
+    <a href="https://www.npmjs.com/package/@x402/fetch" target="_blank">@x402/fetch</a>
     <a href="https://sentinel.co" target="_blank">Sentinel Network</a>
+    <a href="https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" target="_blank">USDC on Base</a>
   </div>
-  <p>x402 &mdash; HTTP 402 was always meant for payments. Built on <a href="https://sentinel.co" target="_blank">Sentinel</a>.</p>
+  <p>x402 &mdash; HTTP 402 was always meant for this. Live on Base mainnet. Built on <a href="https://sentinel.co" target="_blank">Sentinel</a>.</p>
 </footer>
 
 </body>
