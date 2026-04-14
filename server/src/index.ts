@@ -80,7 +80,7 @@ app.use(
           network,
           payTo: operatorAddress,
         }],
-        description: '1 day of private VPN access through 900+ decentralized nodes',
+        description: '1 day of private VPN access through Sentinel decentralized nodes',
         mimeType: 'application/json',
       },
       'POST /vpn/connect/7days': {
@@ -153,7 +153,7 @@ app.get('/pricing', (_req, res) => {
       '7days': { price: '$0.233', endpoint: '/vpn/connect/7days' },
       '30days': { price: '$1.00', endpoint: '/vpn/connect/30days' },
     },
-    nodes: '900+',
+    sentinelNetwork: 'sentinel',
     countries: '70+',
     protocols: ['wireguard', 'v2ray'],
   });
@@ -179,10 +179,7 @@ async function provisionVpn(days: number, body: Record<string, unknown>) {
   const sentinelAddr = body.sentinelAddr as string;
 
   if (!sentinelAddr || !sentinelAddr.startsWith('sent1')) {
-    return {
-      error: 'Include sentinelAddr (sent1...) in request body',
-      example: { sentinelAddr: 'sent1abc...' },
-    };
+    throw new Error('Include sentinelAddr (sent1...) in request body');
   }
 
   console.log(`[x402] Payment settled. Provisioning ${days} days for ${sentinelAddr}...`);
@@ -208,7 +205,7 @@ async function start() {
 
   console.log(`  Port:        ${port}`);
   console.log(`  Operator:    ${operatorAddress}`);
-  console.log(`  Facilitator: ${facilitatorConfig.url}`);
+  console.log(`  Facilitator: ${(facilitatorConfig as any).url || 'CDP (api.cdp.coinbase.com)'}`);
   console.log(`  Network:     ${networkLabel} (${network})`);
   console.log('');
   console.log('  x402 Endpoints (payment required):');

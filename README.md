@@ -1,6 +1,6 @@
 # x402
 
-**AI agents pay USDC on Base and Solana for private internet access through 900+ decentralized VPN nodes.**
+**AI agents pay USDC on Base and Solana for private internet access through Sentinel's decentralized VPN network.**
 
 One function call. No KYC. No accounts. No P2P tokens. Agent pays USDC, connects to VPN, is private.
 

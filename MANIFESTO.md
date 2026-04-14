@@ -20,7 +20,7 @@ An AI agent wants private internet access. Here is what it faces today:
 
 ```
 Agent has USDC on Base
-Agent wants VPN tunnel through 900+ decentralized nodes
+Agent wants VPN tunnel through Sentinel's decentralized nodes
 Agent must: find a protocol → learn a new token → bridge assets →
            navigate a DEX → manage gas on an unfamiliar chain →
            discover nodes → negotiate sessions → handle handshakes →
@@ -49,7 +49,7 @@ x402 is the payment bridge between the chains AI agents already live on and the 
 
 **AI agents hold USDC.** 98.6% of all agent payments — 140 million transactions, $43 million in volume — are in stablecoins. Agents don't know what P2P tokens are. They shouldn't have to.
 
-**Sentinel has the infrastructure.** 900+ independent nodes across 70+ countries. WireGuard and V2Ray tunnels verified on mainnet. 1 million+ registered users. The hardest part — building a decentralized bandwidth network with no single point of failure — is done.
+**Sentinel has the infrastructure.** Independent nodes across 70+ countries. WireGuard and V2Ray tunnels verified on mainnet. 1 million+ registered users. The hardest part — building a decentralized bandwidth network with no single point of failure — is done.
 
 **x402 is the bridge.** Agent pays USDC on Base or Solana. We convert that payment into a time-based VPN subscription on Sentinel. The agent connects directly to a node. We never see the traffic. We never touch the credentials. We just open the door.
 
@@ -125,7 +125,7 @@ A 1-hour subscription means 1 hour of unlimited bandwidth through any node in ou
 ## Why We Will Succeed
 
 ### 1. The Infrastructure Exists
-We are not building a VPN network. Sentinel has been running for years with 900+ nodes, battle-tested protocols, and a proven SDK with 338 exports and 671 tests. We are adding a payment layer on top of production infrastructure.
+We are not building a VPN network. Sentinel has been running for years with decentralized nodes, battle-tested protocols, and a proven SDK with 338 exports and 671 tests. We are adding a payment layer on top of production infrastructure.
 
 ### 2. The Market Is Screaming
 140 million agent payments. $43 million in volume. 250,000 daily active agents. Gartner projects a $30 trillion autonomous agent economy by 2030. And not a single decentralized VPN accepts USDC from AI agents today. We will be the first.
@@ -189,7 +189,7 @@ const vpn = await connect({ trial: true }); // 1 hour, no payment, zero friction
 | Agent pays | USDC on Base or Solana |
 | We receive | USDC into operator wallet |
 | We spend | P2P tokens to lease nodes + fund plans |
-| Agent gets | Time-based unlimited VPN through 900+ nodes |
+| Agent gets | Time-based unlimited VPN through Sentinel's nodes |
 | Our margin | Spread between USDC revenue and P2P operating costs |
 | Node operators get | P2P per hour of bandwidth served |
 | Network effect | More agents = more revenue = more nodes leased = better coverage = more agents |
@@ -215,7 +215,7 @@ This is a flywheel. Every agent that connects makes the network more valuable fo
 - MsgShareSubscription
 - blue-js-sdk (338 exports, 671 tests, published npm v2.0.0)
 - blue-ai-connect (29 exports, WG+V2Ray E2E verified, published npm v2.0.1)
-- Node tester (900+ nodes tested)
+- Node tester (Sentinel nodes tested)
 - P2P treasury (funded)
 
 We are not starting from zero. We are adding the last mile.
@@ -240,7 +240,7 @@ We are not asking agents to trust us. We are building a system where trust is un
 
 ## The Vision
 
-Today: AI agents pay USDC on Base and Solana for time-based VPN subscriptions through 900+ decentralized nodes in 70+ countries. One function call. Zero prerequisites.
+Today: AI agents pay USDC on Base and Solana for time-based VPN subscriptions through Sentinel's decentralized nodes in 70+ countries. One function call. Zero prerequisites.
 
 Tomorrow: Every AI agent framework — Claude, GPT, Gemini, Llama — discovers us through MCP tools, x402 HTTP responses, and npm. Privacy becomes a default capability, not an afterthought. Agents refer agents. The network grows itself.
 

@@ -1,0 +1,140 @@
+x402 End-to-End Test Results
+============================
+Date: 2026-04-14
+Time: 18:50 UTC
+Result: PASS
+
+
+FLOW OVERVIEW
+=============
+
+  Agent (0 P2P, 0 USDC balance needed)
+    |
+    | 1. POST /vpn/connect/1day { sentinelAddr: "sent1..." }
+    v
+  x402 Server returns HTTP 402 Payment Required
+    - Scheme:  exact
+    - Network: eip155:8453 (Base mainnet)
+    - Amount:  33000 atomic USDC ($0.033)
+    - PayTo:   0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49
+    |
+    | 2. @x402/fetch auto-signs EIP-3009 transferWithAuthorization
+    v
+  Facilitator (self-hosted, localhost:4021)
+    - Verifies signature off-chain
+    - Settles USDC on Base (transferWithAuthorization TX)
+    |
+    | 3. Payment settled, request forwarded to route handler
+    v
+  x402 Server provisions agent on Sentinel chain
+    - MsgShareSubscription (add agent to Plan 42 subscription)
+    - MsgGrantAllowance (fee grant — agent pays 0 gas)
+    - Both batched in single atomic TX
+    |
+    | 4. Returns ProvisionResult to agent
+    v
+  Agent calls sentinel-ai-connect
+    - connect({ mnemonic, subscriptionId, feeGranter })
+    - MsgStartSessionRequest on Sentinel (fee-granted, 0 P2P)
+    - WireGuard handshake with node
+    - Tunnel established
+    |
+    v
+  VPN ACTIVE — traffic routed through Sentinel node
+
+
+TIMESTAMPS (UTC)
+================
+
+  Test start:       2026-04-14T18:50:48.374Z
+  Server check:     2026-04-14T18:50:48.502Z
+  Wallet setup:     2026-04-14T18:50:48.549Z
+  402 response:     2026-04-14T18:50:48.550Z
+  VPN connected:    2026-04-14T18:51:09.098Z    (20.5s)
+  VPN verified:     2026-04-14T18:51:09.252Z
+  Disconnected:     2026-04-14T18:51:09.253Z    (0.0s)
+
+
+ON-CHAIN TRANSACTIONS — SENTINEL
+=================================
+
+1. Agent Provisioning (MsgShareSubscription + MsgGrantAllowance)
+   TX Hash:  208E71DED0964150B929C55EF816B7CEE28FF42A5AE30092D05B69674ABAC751
+   Block:    27804891
+   Time:     2026-04-14T07:46:25Z
+   Explorer: https://www.mintscan.io/sentinel/tx/208E71DED0964150B929C55EF816B7CEE28FF42A5AE30092D05B69674ABAC751
+
+2. Session Start (MsgStartSessionRequest, fee-granted)
+   TX Hash:  58A2CBBEBB2B1F83B0FE349A89D33EE61BDCEE11C39F4D431B091303F77B1B4B
+   Block:    27814910
+   Time:     2026-04-14T18:50:50Z
+   Explorer: https://www.mintscan.io/sentinel/tx/58A2CBBEBB2B1F83B0FE349A89D33EE61BDCEE11C39F4D431B091303F77B1B4B
+
+3. Session End (MsgCancelSessionRequest, fee-granted)
+   TX Hash:  3D4012F8DB52B79A272D5797A959E2064902DFFFF5EA5C3DC1DEF3D84D754F74
+   Explorer: https://www.mintscan.io/sentinel/tx/3D4012F8DB52B79A272D5797A959E2064902DFFFF5EA5C3DC1DEF3D84D754F74
+
+
+ON-CHAIN TRANSACTIONS — BASE
+=============================
+
+Note: This test used a previously-provisioned agent (subscription 1192288
+was shared in an earlier session). A fresh agent would produce a Base TX
+for the EIP-3009 USDC transferWithAuthorization.
+
+Original USDC payment (from Session 5):
+  Chain:   Base mainnet (eip155:8453)
+  Asset:   USDC ($0.033 = 33000 atomic units)
+  From:    0xdeFeD459b1dB0e900aB8475a96F6964f91fe20E5 (agent)
+  To:      0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49 (operator)
+  USDC:    0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+
+CONNECTION DETAILS
+==================
+
+  Agent Sentinel:     sent1ucp9jjkr9v6xd6l7mvwpmymlvmpfpxd5feq7x7
+  Agent P2P balance:  0.00 P2P (zero — fee grant covers all gas)
+  Fee granter:        sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg (operator)
+  Fee grant spend:    4,580,000 udvpn remaining
+  Fee grant expires:  2026-04-16T07:46:13Z (~37h remaining)
+  Subscription:       1192288 (Plan 42)
+  Session ID:         39225627
+  Protocol:           WireGuard
+  Node:               sentnode10e7wrxjfzywvsvptewqrg0kjsrrap3277zdkke
+  Node name:          SuchNode-GQmz8m6jfOFD
+  Location:           Columbus, United States
+  VPN IP:             104.234.231.158
+  Connect time:       20.5s
+
+
+FEE GRANT DETAILS
+==================
+
+  Granter:            sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg
+  Grantee:            sent1ucp9jjkr9v6xd6l7mvwpmymlvmpfpxd5feq7x7
+  Type:               AllowedMsgAllowance wrapping BasicAllowance
+  Spend limit:        4,580,000 udvpn (~76 TXs remaining)
+  Expiration:         2026-04-16T07:46:13Z
+  Allowed messages:
+    - /sentinel.subscription.v3.MsgStartSessionRequest
+    - /sentinel.session.v3.MsgCancelSessionRequest
+    - /sentinel.session.v3.MsgUpdateSessionRequest
+    - /sentinel.node.v3.MsgStartSessionRequest
+
+  Query fee grant:
+    https://lcd.sentinel.co/cosmos/feegrant/v1beta1/allowances/sent1ucp9jjkr9v6xd6l7mvwpmymlvmpfpxd5feq7x7
+
+  Query session:
+    https://lcd.sentinel.co/sentinel/session/v3/sessions/39225627
+
+
+PRICING
+=======
+
+  1 day:    $0.033  →  POST /vpn/connect/1day
+  7 days:   $0.233  →  POST /vpn/connect/7days
+  30 days:  $1.00   →  POST /vpn/connect/30days
+
+  Payment contract: 0x923F41eb162d4F7D274CE8cE8b8178883E7E2196 (Base)
+  USDC contract:    0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (Base)

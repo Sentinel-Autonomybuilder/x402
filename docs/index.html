@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>x402 — Private Internet for AI Agents</title>
-<meta name="description" content="AI agents pay USDC on Base or Solana for private VPN access through 900+ decentralized nodes. One function call. No KYC. No accounts.">
+<meta name="description" content="AI agents pay USDC on Base for private VPN access through Sentinel's decentralized node network. One function call. No KYC. No accounts.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -595,6 +595,135 @@ footer a:hover { color: white; }
   nav .links a { font-size: 12px; }
 }
 
+/* ─── Two Paths ─── */
+.paths-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.path-card {
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  position: relative;
+}
+
+.path-card.active { border-color: var(--green); }
+.path-card.building { border-color: var(--accent); }
+
+.path-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+}
+
+.path-badge.live {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(16,185,129,0.3);
+}
+
+.path-badge.soon {
+  background: var(--accent-glow);
+  color: var(--accent-bright);
+  border: 1px solid rgba(30,136,229,0.3);
+}
+
+.path-card h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.path-card .path-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.path-card .path-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.path-card .path-steps li {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding-left: 20px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.path-card .path-steps li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 7px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-bright);
+}
+
+.path-card.active .path-steps li::before {
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.path-card.building .path-steps li::before {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+
+.path-card .path-traits {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.path-card .path-trait {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.path-card .path-trait .label { color: var(--text-dim); }
+.path-card .path-trait .val {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.current-note {
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--accent-subtle);
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.current-note strong { color: var(--accent-bright); }
+
+@media (max-width: 700px) {
+  .paths-grid { grid-template-columns: 1fr; }
+}
+
 /* ─── Animations ─── */
 .fade-in {
   opacity: 0;
@@ -631,28 +760,22 @@ footer a:hover { color: white; }
 <!-- ─── Hero ─── -->
 <section class="hero">
   <div class="container">
-    <div class="protocol-badge fade-in">Live on Base Mainnet &middot; HTTP 402 Protocol</div>
+    <div class="protocol-badge fade-in">Live on Base Mainnet &middot; Sentinel dVPN</div>
     <h1 class="fade-in">Private internet<br>for <span class="highlight">AI agents</span></h1>
-    <p class="subtitle fade-in">Your agent sends a request. Gets HTTP 402. Pays USDC automatically. VPN provisioned on 900+ decentralized nodes. One fetch call. No accounts. No KYC. Everything on-chain.</p>
+    <p class="subtitle fade-in">AI agents pay USDC on Base for private VPN access through Sentinel's decentralized node network. Two paths: go fully autonomous, or let us manage everything. No KYC. No accounts. Everything on-chain.</p>
 
     <div class="code-preview fade-in">
       <div class="code-block">
         <div class="bar">
           <div class="dots"><span></span><span></span><span></span></div>
-          <div class="label">agent.ts &mdash; that's it, the agent is private</div>
+          <div class="label">Direct flow &mdash; agent manages its own P2P and gas</div>
         </div>
-        <pre><code><span class="kw">import</span> { <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
+        <pre><code><span class="kw">import</span> { <span class="fn">createWallet</span>, <span class="fn">connectDirect</span> } <span class="kw">from</span> <span class="str">'blue-js-sdk'</span><span class="op">;</span>
 
-<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
-
-<span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">paidFetch</span>(<span class="str">'https://x402.blue/vpn/connect/30days'</span><span class="op">,</span> {
-  <span class="prop">method</span><span class="op">:</span> <span class="str">'POST'</span><span class="op">,</span>
-  <span class="prop">headers</span><span class="op">:</span> { <span class="str">'Content-Type'</span><span class="op">:</span> <span class="str">'application/json'</span> }<span class="op">,</span>
-  <span class="prop">body</span><span class="op">:</span> JSON<span class="op">.</span><span class="fn">stringify</span>({ <span class="prop">sentinelAddr</span><span class="op">:</span> <span class="str">'sent1...'</span> })<span class="op">,</span>
-})<span class="op">;</span>
-<span class="cm">// 402 &rarr; auto-signs USDC transfer &rarr; settled on Base &rarr; VPN provisioned</span>
-<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
-<span class="cm">// { subscriptionId, sentinelTxHash, expiresAt, feeGranted: true }</span></code></pre>
+<span class="cm">// Agent already holds P2P tokens (bought with USDC on Base)</span>
+<span class="kw">const</span> { wallet } <span class="op">=</span> <span class="kw">await</span> <span class="fn">createWallet</span>(process<span class="op">.</span>env<span class="op">.</span>SENTINEL_MNEMONIC)<span class="op">;</span>
+<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connectDirect</span>({ wallet<span class="op">,</span> <span class="prop">country</span><span class="op">:</span> <span class="str">'US'</span> })<span class="op">;</span>
+<span class="cm">// Agent pays node directly &mdash; full autonomy, no middleman</span></code></pre>
       </div>
     </div>
   </div>
@@ -665,7 +788,7 @@ footer a:hover { color: white; }
   <div class="container">
     <div class="section-label">Pricing</div>
     <h2>Pay per day. No subscriptions.</h2>
-    <p class="desc">Agents pay upfront for exactly the days they need. USDC on Base, settled automatically by the x402 protocol. Minimum 1 day.</p>
+    <p class="desc">Pricing for the Managed Plan flow. Agents pay upfront for exactly the days they need. USDC on Base, settled automatically by the x402 protocol. For the Direct flow, agents buy P2P tokens and pay nodes at their posted rates.</p>
 
     <div class="pricing-card">
       <div class="left">
@@ -673,7 +796,7 @@ footer a:hover { color: white; }
         <div class="price">$1<span>/month</span></div>
         <div class="price-sub">$0.033 per day &middot; USDC on Base</div>
         <ul class="features">
-          <li>900+ nodes in 70+ countries</li>
+          <li>Decentralized Sentinel nodes</li>
           <li>Unlimited bandwidth</li>
           <li>WireGuard + V2Ray tunnels</li>
           <li>Zero gas on Sentinel (fee granted)</li>
@@ -696,12 +819,71 @@ footer a:hover { color: white; }
 
 <div class="divider"></div>
 
-<!-- ─── Flow ─── -->
+<!-- ─── Two Paths ─── -->
 <section id="flow">
   <div class="container">
-    <div class="section-label">How It Works</div>
-    <h2>Request. Pay. Connect.</h2>
-    <p class="desc">The x402 protocol handles everything. Agent sends one fetch call &mdash; payment, settlement, and VPN provisioning happen automatically.</p>
+    <div class="section-label">Two Paths</div>
+    <h2>Choose your level of autonomy</h2>
+    <p class="desc">An AI agent can go fully autonomous (manage its own P2P tokens and gas) or let our x402 server handle everything (managed plan, zero gas, one command).</p>
+
+    <div class="paths-grid">
+      <div class="path-card active">
+        <span class="path-badge live">Live Now</span>
+        <h3>Direct &mdash; Agent pays nodes</h3>
+        <p class="path-desc">Agent holds P2P tokens, manages its own gas, and pays Sentinel nodes directly. Full autonomy. No intermediary in the payment or the tunnel.</p>
+        <ul class="path-steps">
+          <li>Agent pays USDC on Base, receives P2P tokens</li>
+          <li>Agent creates Sentinel wallet, holds own keys</li>
+          <li>Agent queries nodes, picks by country/speed</li>
+          <li>Agent starts session, pays node in P2P directly</li>
+          <li>Handshakes with VPN node (WireGuard/V2Ray)</li>
+          <li>Full control &mdash; no middleman, no plan needed</li>
+        </ul>
+        <div class="path-traits">
+          <div class="path-trait"><span class="label">Gas</span><span class="val">Agent pays (~0.01 P2P/tx)</span></div>
+          <div class="path-trait"><span class="label">Node choice</span><span class="val">Any Sentinel node</span></div>
+          <div class="path-trait"><span class="label">Trust</span><span class="val">Zero &mdash; agent controls everything</span></div>
+          <div class="path-trait"><span class="label">Best for</span><span class="val">Autonomous agents</span></div>
+        </div>
+      </div>
+
+      <div class="path-card building">
+        <span class="path-badge soon">Building Now</span>
+        <h3>Managed Plan &mdash; x402 handles it</h3>
+        <p class="path-desc">Agent pays USDC via HTTP 402. We add the agent to our subscription plan, grant gas allowance, and the agent connects with one command. Zero gas on Sentinel.</p>
+        <ul class="path-steps">
+          <li>Agent sends <code>POST /vpn/connect/30days</code></li>
+          <li>Server returns HTTP 402 + payment details</li>
+          <li>@x402/fetch auto-signs USDC (EIP-3009)</li>
+          <li>Facilitator settles payment on Base</li>
+          <li>Server runs MsgShareSubscription + MsgGrantAllowance</li>
+          <li>Agent connects &mdash; zero gas, one command</li>
+        </ul>
+        <div class="path-traits">
+          <div class="path-trait"><span class="label">Gas</span><span class="val">$0 &mdash; fee granted by operator</span></div>
+          <div class="path-trait"><span class="label">Node choice</span><span class="val">Nodes in our plan</span></div>
+          <div class="path-trait"><span class="label">Trust</span><span class="val">Minimal &mdash; tunnel still direct</span></div>
+          <div class="path-trait"><span class="label">Best for</span><span class="val">Quick integration</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="current-note">
+      <strong>Current status:</strong> The Direct flow is live &mdash; the committed code handles USDC-to-P2P conversion and the agent managing its own Sentinel sessions.
+      The Managed Plan flow (x402 HTTP 402 server with automatic subscription provisioning) is actively being built and will be the primary integration path.
+      Both flows use the same Sentinel network and the same WireGuard/V2Ray tunnels. The only difference is who manages the gas and the subscription.
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── Managed Plan Flow Detail ─── -->
+<section id="managed-flow">
+  <div class="container">
+    <div class="section-label">Managed Plan Flow</div>
+    <h2>How x402 subscription works</h2>
+    <p class="desc">The flow we're building. Agent sends one HTTP request. Payment, settlement, subscription provisioning, and fee granting all happen automatically.</p>
 
     <div class="flow-steps">
       <div class="flow-step">
@@ -717,7 +899,7 @@ footer a:hover { color: white; }
         <div class="step-num">2</div>
         <div class="step-content">
           <h4>Payment signed automatically</h4>
-          <p><code>@x402/fetch</code> reads the 402 response, signs an EIP-3009 <code>transferWithAuthorization</code> for the exact USDC amount, and resends the request with a <code>PAYMENT-SIGNATURE</code> header. The agent's EVM key never leaves the agent.</p>
+          <p><code>@x402/fetch</code> reads the 402 response, signs an EIP-3009 <code>transferWithAuthorization</code> for the exact USDC amount, and resends the request with a <code>PAYMENT-SIGNATURE</code> header. Agent's EVM key never leaves the agent.</p>
           <span class="tag tag-chain">Base &middot; USDC</span>
         </div>
       </div>
@@ -734,8 +916,8 @@ footer a:hover { color: white; }
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-content">
-          <h4>VPN provisioned on Sentinel</h4>
-          <p>Server sends one atomic transaction: <code>MsgShareSubscription</code> + <code>MsgGrantAllowance</code>. Agent is added to our plan with a fee grant &mdash; zero gas on Sentinel. Agent can now start VPN sessions on any of 900+ nodes, handshaking directly with the node. We never see the tunnel or the traffic.</p>
+          <h4>Agent added to subscription plan</h4>
+          <p>Server sends one atomic Sentinel transaction: <code>MsgShareSubscription</code> (adds agent to our plan) + <code>MsgGrantAllowance</code> (fee grant so agent pays zero gas). Agent can now start VPN sessions on any node in the plan, handshaking directly. We never see the tunnel or the traffic.</p>
           <span class="tag tag-agent">Agent &harr; Node</span>
         </div>
       </div>
@@ -749,13 +931,70 @@ footer a:hover { color: white; }
 <section id="code">
   <div class="container">
     <div class="section-label">Integration</div>
-    <h2>One fetch call</h2>
-    <p class="desc">Wrap your fetch with <code>@x402/fetch</code>. It handles 402 responses, USDC signing, and payment settlement automatically. Your agent just makes HTTP requests.</p>
+    <h2>Two integration paths</h2>
+    <p class="desc">Go fully autonomous with <code>blue-js-sdk</code> (live now) or let the x402 server handle everything with <code>@x402/fetch</code> (building now). Both give you private internet access through the same Sentinel network.</p>
+
+    <h3 style="font-size: 16px; color: var(--green); font-family: var(--font-mono); margin-bottom: 16px; letter-spacing: 0.5px;">&#9679; Direct Flow &mdash; Live Now</h3>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Install</div>
+        <div class="label">Install &mdash; Direct flow (agent manages P2P + gas)</div>
+      </div>
+      <pre><code><span class="fn">npm install</span> blue-js-sdk</code></pre>
+    </div>
+
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">Connect to VPN &mdash; agent pays node directly</div>
+      </div>
+      <pre><code><span class="kw">import</span> { <span class="fn">createWallet</span>, <span class="fn">connectDirect</span> } <span class="kw">from</span> <span class="str">'blue-js-sdk'</span><span class="op">;</span>
+
+<span class="cm">// Agent already holds P2P tokens (purchased with USDC on Base)</span>
+<span class="kw">const</span> { wallet } <span class="op">=</span> <span class="kw">await</span> <span class="fn">createWallet</span>(process<span class="op">.</span>env<span class="op">.</span>SENTINEL_MNEMONIC)<span class="op">;</span>
+
+<span class="cm">// Pick any Sentinel node &mdash; pay directly in P2P, full autonomy</span>
+<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connectDirect</span>({
+  wallet<span class="op">,</span>
+  <span class="prop">country</span><span class="op">:</span> <span class="str">'US'</span><span class="op">,</span>
+  <span class="prop">protocol</span><span class="op">:</span> <span class="str">'wireguard'</span><span class="op">,</span>
+})<span class="op">;</span>
+
+<span class="cm">// {</span>
+<span class="cm">//   connected: true,</span>
+<span class="cm">//   ip: '185.xxx.xxx.xxx',</span>
+<span class="cm">//   country: 'US',</span>
+<span class="cm">//   node: 'sentnode1...',</span>
+<span class="cm">//   sessionId: '12345678',</span>
+<span class="cm">//   protocol: 'wireguard'</span>
+<span class="cm">// }</span></code></pre>
+    </div>
+
+    <div class="code-block" style="margin-bottom: 48px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">Direct flow &mdash; what the agent manages</div>
+      </div>
+      <pre><code><span class="cm">// The agent controls the full lifecycle:</span>
+<span class="cm">//</span>
+<span class="cm">// 1. Wallet: Agent creates &amp; holds Sentinel keys (mnemonic)</span>
+<span class="cm">// 2. Tokens: Agent holds P2P tokens (bought with USDC on Base)</span>
+<span class="cm">// 3. Gas: Agent pays Sentinel gas (~0.01 P2P per transaction)</span>
+<span class="cm">// 4. Node selection: Agent queries Sentinel nodes, picks by country/speed</span>
+<span class="cm">// 5. Session: Agent starts/ends sessions, pays node directly</span>
+<span class="cm">// 6. Tunnel: Agent handshakes directly with VPN node (WireGuard/V2Ray)</span>
+<span class="cm">//</span>
+<span class="cm">// Zero middlemen. Zero trust required. Full autonomy.</span>
+<span class="cm">// This is what the current committed code implements.</span></code></pre>
+    </div>
+
+    <h3 style="font-size: 16px; color: var(--accent-bright); font-family: var(--font-mono); margin-bottom: 16px; letter-spacing: 0.5px;">&#9675; Managed Plan Flow &mdash; Building Now</h3>
+
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">Install &mdash; Managed plan (x402 handles everything)</div>
       </div>
       <pre><code><span class="fn">npm install</span> @x402/fetch</code></pre>
     </div>
@@ -777,19 +1016,47 @@ footer a:hover { color: white; }
   <span class="prop">body</span><span class="op">:</span> JSON<span class="op">.</span><span class="fn">stringify</span>({ <span class="prop">sentinelAddr</span><span class="op">:</span> <span class="str">'sent1abc...'</span> })<span class="op">,</span>
 })<span class="op">;</span>
 
-<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
+<span class="kw">const</span> provision <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
 <span class="cm">// {</span>
-<span class="cm">//   subscriptionId: '1170850',</span>
+<span class="cm">//   provisioned: true,</span>
+<span class="cm">//   subscriptionId: 1170850,</span>
+<span class="cm">//   planId: 42,</span>
+<span class="cm">//   feeGranter: 'sent12e03w...',  &larr; operator pays all gas</span>
 <span class="cm">//   sentinelTxHash: '2C1CFE...5975',</span>
 <span class="cm">//   expiresAt: '2026-05-14T...',</span>
-<span class="cm">//   feeGranted: true  &larr; agent pays 0 gas on Sentinel</span>
+<span class="cm">//   operatorAddress: '0xCC68...',</span>
+<span class="cm">//   instructions: 'Use sentinel-ai-connect: connect({ ... })'</span>
 <span class="cm">// }</span></code></pre>
     </div>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">What happens under the hood</div>
+        <div class="label">Step 2: Connect to VPN &mdash; use provisioned credentials</div>
+      </div>
+      <pre><code><span class="kw">import</span> { <span class="fn">connect</span>, <span class="fn">disconnect</span> } <span class="kw">from</span> <span class="str">'sentinel-ai-connect'</span><span class="op">;</span>
+
+<span class="cm">// Connect using the provisioned subscription + fee grant</span>
+<span class="cm">// Agent has 0 P2P tokens &mdash; operator covers all gas</span>
+<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
+  <span class="prop">mnemonic</span><span class="op">:</span> process<span class="op">.</span>env<span class="op">.</span>SENTINEL_MNEMONIC<span class="op">,</span>
+  <span class="prop">subscriptionId</span><span class="op">:</span> provision<span class="op">.</span>subscriptionId<span class="op">,</span>  <span class="cm">// from provisioning response</span>
+  <span class="prop">feeGranter</span><span class="op">:</span> provision<span class="op">.</span>feeGranter<span class="op">,</span>          <span class="cm">// operator pays gas</span>
+})<span class="op">;</span>
+
+<span class="cm">// All traffic now routes through encrypted P2P tunnel</span>
+console<span class="op">.</span><span class="fn">log</span>(<span class="str">`VPN active: ${vpn.ip} via ${vpn.protocol}`</span>)<span class="op">;</span>
+<span class="cm">// { connected: true, ip: '104.234.x.x', protocol: 'wireguard',</span>
+<span class="cm">//   sessionId: '39185776', nodeAddress: 'sentnode1...' }</span>
+
+<span class="cm">// Disconnect also uses fee grant &mdash; 0 tokens needed</span>
+<span class="kw">await</span> <span class="fn">disconnect</span>()<span class="op">;</span></code></pre>
+    </div>
+
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">Under the hood &mdash; what x402 does for you</div>
       </div>
       <pre><code><span class="cm">// 1. Agent sends POST /vpn/connect/30days</span>
 <span class="cm">//    &rarr; Server returns HTTP 402 + PAYMENT-REQUIRED header</span>
@@ -805,8 +1072,38 @@ footer a:hover { color: white; }
 <span class="cm">// 4. Resends request with PAYMENT-SIGNATURE header</span>
 <span class="cm">//    &rarr; Facilitator verifies + settles USDC on Base</span>
 <span class="cm">//    &rarr; Server provisions agent on Sentinel chain</span>
-<span class="cm">//    &rarr; Returns subscription + fee grant details</span></code></pre>
+<span class="cm">//    &rarr; Returns { subscriptionId, feeGranter, expiresAt }</span>
+<span class="cm">//</span>
+<span class="cm">// 5. Agent calls connect({ subscriptionId, feeGranter })</span>
+<span class="cm">//    &rarr; SDK validates fee grant on-chain (RPC, ~250ms)</span>
+<span class="cm">//    &rarr; Broadcasts MsgStartSession via broadcastWithFeeGrant</span>
+<span class="cm">//    &rarr; Handshakes with VPN node (WireGuard/V2Ray)</span>
+<span class="cm">//    &rarr; Tunnel established, IP changed</span></code></pre>
     </div>
+
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">Error handling &mdash; fee grant pre-check errors</div>
+      </div>
+      <pre><code><span class="kw">try</span> {
+  <span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
+    <span class="prop">mnemonic</span><span class="op">,</span> <span class="prop">subscriptionId</span><span class="op">,</span> <span class="prop">feeGranter</span><span class="op">,</span>
+  })<span class="op">;</span>
+} <span class="kw">catch</span> (err) {
+  <span class="kw">if</span> (err<span class="op">.</span>code <span class="op">===</span> <span class="str">'FEE_GRANT_NOT_FOUND'</span>) {
+    <span class="cm">// No grant on-chain &mdash; request provisioning from x402 server</span>
+  } <span class="kw">else if</span> (err<span class="op">.</span>code <span class="op">===</span> <span class="str">'FEE_GRANT_EXPIRED'</span>) {
+    <span class="cm">// Grant expired &mdash; re-purchase via /vpn/connect/*</span>
+  } <span class="kw">else if</span> (err<span class="op">.</span>code <span class="op">===</span> <span class="str">'FEE_GRANT_EXHAUSTED'</span>) {
+    <span class="cm">// spend_limit too low (&lt;20k udvpn) &mdash; re-provision</span>
+  }
+  <span class="cm">// err.nextAction tells the agent what to do programmatically</span>
+  <span class="cm">// err.details has { granter, grantee, ... } for debugging</span>
+}</code></pre>
+    </div>
+
+    <h3 style="font-size: 16px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 16px; margin-top: 48px; letter-spacing: 0.5px;">Both Flows</h3>
 
     <div class="code-block">
       <div class="bar">
@@ -821,7 +1118,7 @@ footer a:hover { color: white; }
 <span class="cm">//     '7days': { price: '$0.233',  endpoint: '/vpn/connect/7days' },</span>
 <span class="cm">//     '30days':{ price: '$1.00',   endpoint: '/vpn/connect/30days' }</span>
 <span class="cm">//   },</span>
-<span class="cm">//   nodes: '900+', countries: '70+',</span>
+<span class="cm">//   nodes: 'sentinel-network', countries: '70+',</span>
 <span class="cm">//   protocols: ['wireguard', 'v2ray']</span>
 <span class="cm">// }</span></code></pre>
     </div>
@@ -835,24 +1132,24 @@ footer a:hover { color: white; }
   <div class="container">
     <div class="section-label">Security</div>
     <h2>Trust nothing. Verify everything.</h2>
-    <p class="desc">The protocol is designed so that trust is unnecessary. Your keys, your tunnel, your traffic.</p>
+    <p class="desc">Both flows are designed so trust is unnecessary. Your keys, your tunnel, your traffic. The only difference is who manages the gas.</p>
 
     <div class="security-grid">
       <div class="security-item">
-        <h4>EVM key never leaves the agent</h4>
-        <p>EIP-3009 <code>transferWithAuthorization</code> is signed locally. The facilitator only receives the signature, never the private key. Standard USDC, no approve needed.</p>
+        <h4>Agent keys never leave the agent</h4>
+        <p><strong>Direct:</strong> Sentinel mnemonic stays local. <strong>Managed:</strong> EIP-3009 signed locally &mdash; facilitator only receives the signature. In both flows, all private keys remain on the agent.</p>
       </div>
       <div class="security-item">
-        <h4>Tunnel is agent-to-node</h4>
-        <p>WireGuard/V2Ray handshake is direct between the agent and the VPN node. We never see the tunnel credentials, the encryption keys, or the traffic.</p>
+        <h4>Tunnel is always agent-to-node</h4>
+        <p>WireGuard/V2Ray handshake is direct between the agent and the VPN node in both flows. We never see the tunnel credentials, encryption keys, or traffic. Ever.</p>
       </div>
       <div class="security-item">
         <h4>Self-hosted facilitator</h4>
-        <p>No Coinbase. No third party. Our facilitator verifies EIP-3009 signatures and settles USDC on Base. Fully auditable on-chain. Open source.</p>
+        <p>Managed Plan uses our own facilitator &mdash; no Coinbase, no third party. Verifies EIP-3009 signatures and settles USDC on Base. Fully auditable on-chain. Open source.</p>
       </div>
       <div class="security-item">
-        <h4>Zero gas on Sentinel</h4>
-        <p>Agent gets a fee grant &mdash; zero gas to start VPN sessions. The Sentinel key works with any operator, any plan, any node. No lock-in.</p>
+        <h4>Direct = zero trust, Managed = minimal trust</h4>
+        <p><strong>Direct:</strong> Agent pays nodes, no middleman at all. <strong>Managed:</strong> Trust us to provision the subscription, but the tunnel is still direct and we can't see traffic. Agent can switch flows at any time.</p>
       </div>
     </div>
   </div>
@@ -951,11 +1248,145 @@ footer a:hover { color: white; }
   </div>
 </section>
 
+<div class="divider"></div>
+
+<!-- ─── Complete E2E Example ─── -->
+<section id="e2e">
+  <div class="container">
+    <div class="section-label">Complete Example</div>
+    <h2>End-to-end: USDC to VPN tunnel</h2>
+    <p class="desc">Everything in one script. Pay USDC on Base, get provisioned, connect to VPN, verify IP changed, disconnect. Zero P2P tokens needed.</p>
+
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">e2e-vpn.mjs &mdash; complete agent script</div>
+      </div>
+      <pre><code><span class="kw">import</span> { <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">connect</span>, <span class="fn">disconnect</span>, <span class="fn">createWallet</span> } <span class="kw">from</span> <span class="str">'sentinel-ai-connect'</span><span class="op">;</span>
+
+<span class="cm">// ── Step 1: Create Sentinel wallet (one-time) ──</span>
+<span class="kw">const</span> wallet <span class="op">=</span> <span class="kw">await</span> <span class="fn">createWallet</span>()<span class="op">;</span>
+<span class="cm">// Save wallet.mnemonic securely &mdash; this is the agent's VPN identity</span>
+
+<span class="cm">// ── Step 2: Pay USDC on Base via x402 ──</span>
+<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
+
+<span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">paidFetch</span>(<span class="str">'https://x402.blue/vpn/connect/30days'</span><span class="op">,</span> {
+  <span class="prop">method</span><span class="op">:</span> <span class="str">'POST'</span><span class="op">,</span>
+  <span class="prop">headers</span><span class="op">:</span> { <span class="str">'Content-Type'</span><span class="op">:</span> <span class="str">'application/json'</span> }<span class="op">,</span>
+  <span class="prop">body</span><span class="op">:</span> JSON<span class="op">.</span><span class="fn">stringify</span>({ <span class="prop">sentinelAddr</span><span class="op">:</span> wallet<span class="op">.</span>address })<span class="op">,</span>
+})<span class="op">;</span>
+
+<span class="kw">const</span> provision <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
+<span class="cm">// USDC settled on Base, agent added to Sentinel subscription</span>
+<span class="cm">// provision.feeGranter = operator's sent1... address</span>
+<span class="cm">// provision.subscriptionId = active subscription ID</span>
+
+<span class="cm">// ── Step 3: Connect to VPN (0 gas, 0 P2P) ──</span>
+<span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
+  <span class="prop">mnemonic</span><span class="op">:</span> wallet<span class="op">.</span>mnemonic<span class="op">,</span>
+  <span class="prop">subscriptionId</span><span class="op">:</span> provision<span class="op">.</span>subscriptionId<span class="op">,</span>
+  <span class="prop">feeGranter</span><span class="op">:</span> provision<span class="op">.</span>feeGranter<span class="op">,</span>
+})<span class="op">;</span>
+
+console<span class="op">.</span><span class="fn">log</span>(<span class="str">`VPN active: ${vpn.ip} via ${vpn.protocol}`</span>)<span class="op">;</span>
+<span class="cm">// All traffic now through encrypted P2P tunnel</span>
+
+<span class="cm">// ── Step 4: Do private work ──</span>
+<span class="kw">const</span> data <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'https://api.example.com/sensitive'</span>)<span class="op">;</span>
+
+<span class="cm">// ── Step 5: Disconnect (also uses fee grant) ──</span>
+<span class="kw">await</span> <span class="fn">disconnect</span>()<span class="op">;</span></code></pre>
+    </div>
+
+    <div class="code-block">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">Provisioning response &mdash; full shape</div>
+      </div>
+      <pre><code>{
+  <span class="str">"provisioned"</span>: <span class="kw">true</span>,
+  <span class="str">"sentinelAddr"</span>: <span class="str">"sent1abc..."</span>,
+  <span class="str">"days"</span>: <span class="num">30</span>,
+  <span class="str">"subscriptionId"</span>: <span class="num">1192288</span>,      <span class="cm">&larr; pass to connect()</span>
+  <span class="str">"planId"</span>: <span class="num">42</span>,
+  <span class="str">"feeGranter"</span>: <span class="str">"sent12e03..."</span>,  <span class="cm">&larr; pass to connect()</span>
+  <span class="str">"sentinelTxHash"</span>: <span class="str">"2C1CFE..."</span>,
+  <span class="str">"expiresAt"</span>: <span class="str">"2026-05-14T..."</span>,
+  <span class="str">"operatorAddress"</span>: <span class="str">"0xCC689D..."</span>,
+  <span class="str">"instructions"</span>: <span class="str">"Use sentinel-ai-connect: connect({ mnemonic, subscriptionId, feeGranter })"</span>
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── Fee Grant Reference ─── -->
+<section id="feegrant">
+  <div class="container">
+    <div class="section-label">Fee Grant</div>
+    <h2>How zero-gas works</h2>
+    <p class="desc">When x402 provisions an agent, it creates an <code>AllowedMsgAllowance</code> fee grant on the Sentinel chain. The operator pays gas for the agent's session operations.</p>
+
+    <div class="security-grid">
+      <div class="security-item">
+        <h4>What the grant covers</h4>
+        <p><code>MsgStartSessionRequest</code> (connect), <code>MsgCancelSessionRequest</code> (disconnect), <code>MsgUpdateSessionRequest</code> (keep-alive). The agent broadcasts these TXs with <code>feeGranter</code> set &mdash; chain deducts gas from operator.</p>
+      </div>
+      <div class="security-item">
+        <h4>Spend limit</h4>
+        <p>5 P2P (5,000,000 udvpn) per agent &mdash; enough for ~25 session operations. If exhausted, the SDK throws <code>FEE_GRANT_EXHAUSTED</code> with <code>nextAction: 'request_fee_grant_renewal'</code>.</p>
+      </div>
+      <div class="security-item">
+        <h4>Expiration</h4>
+        <p>Grant expires 24 hours after the purchased VPN period. If expired, the session ends naturally when the subscription allocation expires. No tokens are lost.</p>
+      </div>
+      <div class="security-item">
+        <h4>SDK pre-check</h4>
+        <p>Before connecting, the SDK validates the fee grant via RPC (~250ms): checks existence, expiration, spend limit (&ge;20,000 udvpn), and allowed messages. Fails fast with typed errors if invalid.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── Documentation Links ─── -->
+<section id="docs">
+  <div class="container">
+    <div class="section-label">Documentation</div>
+    <h2>Go deeper</h2>
+    <p class="desc">The landing page covers the essentials. For production integration, error handling edge cases, and architectural details:</p>
+
+    <div class="security-grid">
+      <div class="security-item">
+        <h4>GUIDE.md &mdash; Pattern 6</h4>
+        <p>Complete operator-provisioned mode documentation: fee grant pre-check (5-step validation), crash recovery, auto-reconnect dispatch, fee-granted disconnect. The primary reference for x402 integration.</p>
+      </div>
+      <div class="security-item">
+        <h4>E2E-FLOW.md</h4>
+        <p>Every technical detail of the connection lifecycle: RPC protobuf queries, LCD failover, broadcastWithFeeGrant internals, credential persistence, session allocation tracking.</p>
+      </div>
+      <div class="security-item">
+        <h4>DECISION-TREE.md</h4>
+        <p>Visual decision tree for connection mode selection. Covers direct pay, plan subscription, operator-provisioned (fee-granted), and error recovery paths.</p>
+      </div>
+      <div class="security-item">
+        <h4>FAILURES.md</h4>
+        <p>92+ failure patterns with prevention rules. Includes fee grant failures (W4&ndash;W7), crash persistence rules, reconnect mode dispatch, and spend limit validation.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ─── Footer ─── -->
 <footer>
   <div class="footer-links">
     <a href="https://github.com/Sentinel-Autonomybuilder/x402" target="_blank">GitHub</a>
     <a href="https://www.npmjs.com/package/@x402/fetch" target="_blank">@x402/fetch</a>
+    <a href="https://www.npmjs.com/package/sentinel-ai-connect" target="_blank">sentinel-ai-connect</a>
     <a href="https://sentinel.co" target="_blank">Sentinel Network</a>
     <a href="https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" target="_blank">USDC on Base</a>
   </div>

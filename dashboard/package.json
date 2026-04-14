@@ -1,0 +1,18 @@
+{
+  "name": "x402-dashboard",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "x402 E2E flow dashboard — live test runner with real-time step streaming",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "dotenv": "^16.4.0",
+    "ethers": "^6.13.0",
+    "viem": "^2.0.0",
+    "@x402/fetch": "^2.10.0",
+    "@x402/evm": "^2.9.0"
+  }
+}

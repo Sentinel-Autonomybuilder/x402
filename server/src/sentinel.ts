@@ -58,17 +58,20 @@ const SENTINEL_RPC = process.env.SENTINEL_RPC_URL || 'https://rpc.sentinel.co:44
 const SENTINEL_LCD = process.env.SENTINEL_LCD_URL || 'https://lcd.sentinel.co';
 const PLAN_ID = parseInt(process.env.SENTINEL_PLAN_ID || '42', 10);
 
-// Bytes to allocate per share — effectively unlimited for time-based access
-const SHARE_BYTES = 1_000_000_000_000; // 1 TB
+// Bytes to allocate per share — Plan 42 has 10 GB total quota
+// 1 GB per agent, supports ~10 agents per subscription
+const SHARE_BYTES = 1_000_000_000; // 1 GB
 
 // Fee grant budget per agent — covers ~25 session starts
 const FEE_GRANT_SPEND_LIMIT = 5_000_000; // 5 P2P (udvpn)
 
-// Allowed messages for fee grant — only session operations
+// Allowed messages for fee grant — session operations + subscription session start
+// MsgCancelSessionRequest is the v3 name for end/cancel session
 const FEE_GRANT_ALLOWED_MESSAGES = [
   '/sentinel.subscription.v3.MsgStartSessionRequest',
   '/sentinel.session.v3.MsgCancelSessionRequest',
   '/sentinel.session.v3.MsgUpdateSessionRequest',
+  '/sentinel.node.v3.MsgStartSessionRequest',
 ];
 
 // ─── State ───
@@ -122,7 +125,9 @@ async function refreshSubscriptionPool(): Promise<void> {
     subscriptionPool.length = 0;
     for (const sub of subs) {
       const id = Number(sub.id || sub.base_subscription?.id);
-      if (id > 0) {
+      const planId = Number(sub.plan_id || sub.base_subscription?.plan_id);
+      // Only include subscriptions for OUR plan
+      if (id > 0 && planId === PLAN_ID) {
         subscriptionPool.push({ id, allocations: 0 });
       }
     }
@@ -132,18 +137,10 @@ async function refreshSubscriptionPool(): Promise<void> {
 }
 
 /**
- * Get a subscription with available slots (< 8 allocations).
- * If none available, create a new one.
+ * Create a new subscription to the plan on-chain.
  */
-async function getAvailableSubscription(): Promise<number> {
-  for (const slot of subscriptionPool) {
-    if (slot.allocations < 7) {
-      return slot.id;
-    }
-  }
-
-  // No available slots — create new subscription to the plan
-  console.log(`[sentinel] All subscriptions full, creating new one for plan ${PLAN_ID}...`);
+async function createNewSubscription(): Promise<number> {
+  console.log(`[sentinel] Creating new subscription for plan ${PLAN_ID}...`);
   const msg = buildMsgStartSubscription({
     from: operatorAddress,
     id: PLAN_ID,
@@ -159,9 +156,8 @@ async function getAvailableSubscription(): Promise<number> {
   const subId = parseSubscriptionIdFromLog(result.rawLog || '');
   if (!subId) {
     await refreshSubscriptionPool();
-    if (subscriptionPool.length > 0) {
-      return subscriptionPool[subscriptionPool.length - 1].id;
-    }
+    const newest = subscriptionPool[subscriptionPool.length - 1];
+    if (newest) return newest.id;
     throw new Error('Created subscription but could not determine ID');
   }
 
@@ -183,6 +179,8 @@ export interface ProvisionResult {
   sentinelAddr: string;
   days: number;
   subscriptionId: number;
+  planId: number;
+  feeGranter: string;
   sentinelTxHash: string;
   expiresAt: string;
   operatorAddress: string;
@@ -210,7 +208,72 @@ export async function provisionAgent(
     throw new Error('Invalid Sentinel address — must start with sent1');
   }
 
-  const subscriptionId = await getAvailableSubscription();
+  const expirationDate = new Date(Date.now() + days * 86_400_000 + 86_400_000);
+  const feeGrantMsg = buildFeeGrantMsg(operatorAddress, sentinelAddr, {
+    spendLimit: FEE_GRANT_SPEND_LIMIT,
+    expiration: expirationDate,
+    allowedMessages: FEE_GRANT_ALLOWED_MESSAGES,
+  });
+
+  // Try each subscription in the pool; skip depleted ones
+  const triedSubs: number[] = [];
+
+  for (const slot of subscriptionPool) {
+    if (slot.allocations >= 8) continue;
+
+    const shareMsg = buildMsgShareSubscription({
+      from: operatorAddress,
+      id: slot.id,
+      accAddress: sentinelAddr,
+      bytes: SHARE_BYTES,
+    });
+
+    console.log(`[sentinel] Provisioning ${days}d for ${sentinelAddr} (sub ${slot.id})...`);
+
+    try {
+      const result = await safeBroadcast([shareMsg, feeGrantMsg], `x402 provision ${days}d`);
+
+      if (result.code === 0) {
+        slot.allocations++;
+        console.log(`[sentinel] Provisioned! TX: ${result.transactionHash}`);
+        return {
+          provisioned: true,
+          sentinelAddr,
+          days,
+          subscriptionId: slot.id,
+          planId: PLAN_ID,
+          feeGranter: operatorAddress,
+          sentinelTxHash: result.transactionHash,
+          expiresAt: expirationDate.toISOString(),
+          operatorAddress,
+          instructions: `Use sentinel-ai-connect: connect({ mnemonic, subscriptionId: ${slot.id}, feeGranter: '${operatorAddress}' }). Fee grant active — zero gas on Sentinel.`,
+        };
+      }
+
+      // Non-zero code returned (rare — safeBroadcast usually throws)
+      const rawLog = result.rawLog || '';
+      if (rawLog.includes('insufficient bytes')) {
+        console.warn(`[sentinel] Sub ${slot.id} depleted (code ${result.code}), trying next...`);
+        slot.allocations = 99;
+        triedSubs.push(slot.id);
+        continue;
+      }
+      throw new Error(`Sentinel TX failed (code ${result.code}): ${rawLog}`);
+    } catch (err) {
+      const msg = (err as Error).message || '';
+      if (msg.includes('insufficient bytes')) {
+        console.warn(`[sentinel] Sub ${slot.id} depleted, trying next...`);
+        slot.allocations = 99;
+        triedSubs.push(slot.id);
+        continue;
+      }
+      throw err; // non-recoverable error
+    }
+  }
+
+  // All existing subs exhausted — create a new one
+  console.log(`[sentinel] All subs depleted (tried: ${triedSubs.join(', ')}), creating new sub for plan ${PLAN_ID}...`);
+  const subscriptionId = await createNewSubscription();
 
   const shareMsg = buildMsgShareSubscription({
     from: operatorAddress,
@@ -219,34 +282,26 @@ export async function provisionAgent(
     bytes: SHARE_BYTES,
   });
 
-  const expirationDate = new Date(Date.now() + days * 86_400_000 + 86_400_000);
-  const feeGrantMsg = buildFeeGrantMsg(operatorAddress, sentinelAddr, {
-    spendLimit: FEE_GRANT_SPEND_LIMIT,
-    expiration: expirationDate,
-    allowedMessages: FEE_GRANT_ALLOWED_MESSAGES,
-  });
-
-  console.log(`[sentinel] Provisioning ${days}d for ${sentinelAddr} (sub ${subscriptionId})...`);
   const result = await safeBroadcast([shareMsg, feeGrantMsg], `x402 provision ${days}d`);
-
   if (result.code !== 0) {
-    throw new Error(`Sentinel TX failed (code ${result.code}): ${result.rawLog}`);
+    throw new Error(`Sentinel TX failed on new sub ${subscriptionId} (code ${result.code}): ${result.rawLog}`);
   }
 
   const slot = subscriptionPool.find(s => s.id === subscriptionId);
   if (slot) slot.allocations++;
 
-  console.log(`[sentinel] Provisioned! TX: ${result.transactionHash}`);
-
+  console.log(`[sentinel] Provisioned on new sub ${subscriptionId}! TX: ${result.transactionHash}`);
   return {
     provisioned: true,
     sentinelAddr,
     days,
     subscriptionId,
+    planId: PLAN_ID,
+    feeGranter: operatorAddress,
     sentinelTxHash: result.transactionHash,
     expiresAt: expirationDate.toISOString(),
     operatorAddress,
-    instructions: 'Use blue-ai-connect with your Sentinel mnemonic to start a VPN session. Fee grant active — zero gas on Sentinel chain.',
+    instructions: `Use sentinel-ai-connect: connect({ mnemonic, subscriptionId: ${subscriptionId}, feeGranter: '${operatorAddress}' }). Fee grant active — zero gas on Sentinel.`,
   };
 }
 

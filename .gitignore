@@ -26,3 +26,6 @@ CLAUDE.md
 wallets.env
 *.key
 *.secret
+
+# Memory (local session state)
+memory/

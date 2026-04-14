@@ -1,6 +1,6 @@
 # x402-connect
 
-AI agents pay USDC on Base or Solana for private VPN access through Sentinel's 900+ decentralized nodes.
+AI agents pay USDC on Base or Solana for private VPN access through Sentinel's decentralized node network.
 
 ## Install
 

@@ -1,0 +1,86 @@
+x402 on Base — ELI5
+====================
+
+
+THE PROBLEM
+-----------
+
+An AI agent has USDC in a wallet. It wants VPN access. Normally it would need to:
+1. Find a VPN provider
+2. Create an account
+3. Enter credit card info
+4. Wait for approval
+5. Download configs
+6. Set up the tunnel
+
+None of that works for an autonomous AI. No credit cards. No accounts. No human clicking buttons.
+
+
+THE x402 FLOW
+-------------
+
+Agent: "I want VPN"          →  POST /vpn/connect/1day
+Server: "That'll be $0.033"  ←  HTTP 402 Payment Required
+Agent: *signs a check*       →  EIP-3009 signature (not a TX — just a signature)
+Server: *cashes the check*   →  Facilitator calls receiveWithAuthorization() on Base
+Server: *flips the switch*   →  Provisions agent on Sentinel chain
+Agent: *connects*            →  Direct encrypted tunnel to a node
+
+
+WHY EIP-3009 MATTERS
+--------------------
+
+Traditional ERC-20 payment requires TWO transactions from the agent:
+1. approve(spender, amount) — agent pays gas
+2. Then the spender calls transferFrom() — spender pays gas
+
+EIP-3009 (transferWithAuthorization) does it in ZERO transactions from the agent:
+1. Agent signs a typed data message (free — no gas, no TX)
+2. Anyone can submit that signature to the USDC contract to move the funds
+
+The agent pays ZERO gas on Base. The facilitator submits the TX and pays the gas.
+The agent just signs a piece of data.
+
+
+WHY THIS MATTERS
+----------------
+
+HTTP 402 was reserved 30 years ago for "Payment Required" but never had a standard.
+x402 is that standard:
+
+- Any HTTP endpoint can put a price on itself by returning 402
+- Any client with USDC can pay by signing EIP-3009
+- No accounts, no API keys, no KYC — just a wallet and USDC
+- Machine-readable — an AI reads the 402, sees the price, signs, done
+
+For AI agents specifically:
+
+  Without x402                        With x402
+  ─────────────────────────────────   ─────────────────────────────
+  Need human to set up accounts       Agent pays autonomously
+  Need credit card / PayPal           Just USDC in a wallet
+  Need API keys provisioned           HTTP 402 is self-describing
+  Minutes to hours of setup           10 seconds end to end
+  Can't work autonomously             Fully autonomous
+
+
+THE MONEY FLOW
+--------------
+
+Agent wallet (Base)
+  └─ signs EIP-3009 ─→ USDC contract on Base
+                          └─ moves $0.033 USDC ─→ Operator wallet (Base)
+
+Operator wallet (Sentinel)
+  └─ grants fee allowance ─→ Agent wallet (Sentinel)
+                                └─ starts VPN session (0 gas)
+
+Two chains. One payment. Zero gas for the agent on either chain.
+The agent's USDC on Base pays for everything — including Sentinel gas via the fee grant.
+
+
+ONE SENTENCE
+------------
+
+x402 turns "pay for internet access" into a single HTTP request that any AI agent
+with USDC can complete in 10 seconds, no accounts, no gas, no human required.

@@ -1,0 +1,358 @@
+x402 FRESH AGENT — COMPLETE E2E TEST
+==========================================
+Date:         2026-04-14
+Time:         19:27:05 → 19:28:15 UTC (70 seconds)
+Result:       PASS
+Total Steps:  17
+On-chain TXs: 5
+
+
+WALLETS
+=======
+
+Agent EVM (Base):
+  Address:     0x8FA1D47589841902d39e308d65799B36A27Df075
+  Explorer:    https://basescan.org/address/0x8FA1D47589841902d39e308d65799B36A27Df075
+
+Agent Sentinel:
+  Address:     sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw
+  Explorer:    https://www.mintscan.io/sentinel/address/sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw
+
+Operator:
+  EVM:         0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49
+  Sentinel:    sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg
+
+
+══════════════════════════════════════════════════════════════════════
+  STEP-BY-STEP EXECUTION (17 steps)
+══════════════════════════════════════════════════════════════════════
+
+STEP 1 — Generate fresh EVM wallet
+────────────────────────────────────────────────────────────
+  Time:       19:27:05.575Z
+  Action:     ethers.Wallet.createRandom()
+  Address:    0x8FA1D47589841902d39e308d65799B36A27Df075
+  Chain:      Base (EIP-155:8453)
+  On-chain:   None — local key generation
+
+STEP 2 — Generate fresh Sentinel wallet
+────────────────────────────────────────────────────────────
+  Time:       19:27:05.643Z
+  Action:     createWallet() — BIP39 mnemonic, Cosmos keypair
+  Address:    sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw
+  Chain:      Sentinel (sentinelhub-2)
+  On-chain:   None — local key derivation
+
+STEP 3 — Fund agent: USDC on Base
+────────────────────────────────────────────────────────────
+  Time:       19:27:05.644Z
+  Confirmed:  19:27:10.477Z
+  From:       0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49 (operator)
+  To:         0x8FA1D47589841902d39e308d65799B36A27Df075 (agent)
+  Amount:     0.034 USDC
+  Block:      44702740
+  TX Hash:    0xe476d480116ad91fdefb647285dd1f3cb3f62473ef7d0dc153a07250a8ff4e41
+  Explorer:   https://basescan.org/tx/0xe476d480116ad91fdefb647285dd1f3cb3f62473ef7d0dc153a07250a8ff4e41
+
+STEP 4 — Fund agent: ETH gas on Base
+────────────────────────────────────────────────────────────
+  Time:       19:27:10.477Z
+  Confirmed:  19:27:15.355Z
+  From:       0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49 (operator)
+  To:         0x8FA1D47589841902d39e308d65799B36A27Df075 (agent)
+  Amount:     0.00005 ETH
+  Block:      44702743
+  TX Hash:    0xb224ee7d98424249026c7c5fa881b42125282717f226868bb30e333fe1f523d8
+  Explorer:   https://basescan.org/tx/0xb224ee7d98424249026c7c5fa881b42125282717f226868bb30e333fe1f523d8
+
+STEP 5 — Verify agent funded
+────────────────────────────────────────────────────────────
+  Time:       19:27:15.418Z
+  Agent USDC: 0.034
+  Agent ETH:  0.00005
+  Agent P2P:  0.00 (fee-granted — no tokens needed)
+  On-chain:   Read-only balance check
+
+STEP 6 — POST /vpn/connect/1day → HTTP 402
+────────────────────────────────────────────────────────────
+  Time:       19:27:15.418Z
+  URL:        POST /vpn/connect/1day
+  Body:       { "sentinelAddr": "sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw" }
+  Response:   402 Payment Required
+  Scheme:     exact (EIP-3009)
+  Network:    eip155:8453 (Base)
+  Price:      33000 atomic USDC ($0.033)
+  Pay To:     0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49
+
+STEP 7 — x402 payment: sign EIP-3009 → settle on Base → provision on Sentinel
+────────────────────────────────────────────────────────────
+  Time:       19:27:15.548Z
+  Confirmed:  19:27:25.088Z
+  Elapsed:    9.5s
+  Action:     @x402/fetch signs EIP-3009, facilitator settles USDC on Base,
+              server provisions agent on Sentinel (MsgShareSubscription + MsgGrantAllowance)
+
+STEP 8 — Provisioning result received (HTTP 200)
+────────────────────────────────────────────────────────────
+  Time:           19:27:25.088Z
+  Provisioned:    true
+  Subscription:   1192288
+  Plan ID:        42
+  Fee Granter:    sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg
+  Expires:        2026-04-16T19:27:15Z
+  Sentinel TX:    113628625660433B3E53E5B90306EF0C22E7900439F93448708CA084B8DA7367
+  Explorer:       https://www.mintscan.io/sentinel/tx/113628625660433B3E53E5B90306EF0C22E7900439F93448708CA084B8DA7367
+
+STEP 9 — Query fee grant via Sentinel RPC
+────────────────────────────────────────────────────────────
+  Time:           19:27:26.199Z
+  Granter:        sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg (operator)
+  Grantee:        sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw (agent)
+  Balance:        5,000,000 udvpn (5.00 P2P)
+  Expiration:     2026-04-16T19:27:15Z
+  Allowed Msgs:   4 message types
+  Queried via:    Sentinel RPC (rpc.sentinel.co)
+
+STEP 10 — Connect to VPN (fee-granted session)
+────────────────────────────────────────────────────────────
+  Time:           19:27:26.200Z
+  Action:         MsgStartSessionRequest → WireGuard handshake → tunnel
+  Gas:            ZERO — fee grant covers all gas
+  Granter:        sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg
+
+STEP 11 — VPN connected
+────────────────────────────────────────────────────────────
+  Time:           19:27:52.110Z
+  Session ID:     39227850
+  Protocol:       WireGuard
+  Node:           sentnode10e7wrxjfzywvsvptewqrg0kjsrrap3277zdkke
+  Location:       Columbus, United States
+  Connect time:   25.9s
+
+STEP 12 — Session start TX found via Sentinel RPC
+────────────────────────────────────────────────────────────
+  Chain time:     19:27:29Z
+  Block:          27815452
+  TX Hash:        45EA77A5773C97B3CEB48550A2BA238A58E442D8B62B548D7A1C4638E80315C2
+  From:           sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw (agent, fee-granted)
+  Fee Granter:    sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg
+  Session:        39227850
+  Queried via:    Sentinel RPC tx_search
+  Explorer:       https://www.mintscan.io/sentinel/tx/45EA77A5773C97B3CEB48550A2BA238A58E442D8B62B548D7A1C4638E80315C2
+
+STEP 13 — Verify tunnel active
+────────────────────────────────────────────────────────────
+  Time:           19:28:06.326Z
+  Session ID:     39227850
+  Status:         Connected (tunnel verified before disconnect)
+
+STEP 14 — Disconnect + end session (fee-granted)
+────────────────────────────────────────────────────────────
+  Time:           19:28:06.326Z
+  Action:         MsgCancelSessionRequest on Sentinel (fire-and-forget)
+  Gas:            ZERO — fee grant covers gas
+
+STEP 15 — Session end TX found via Sentinel RPC
+────────────────────────────────────────────────────────────
+  Chain time:     19:28:08Z
+  Block:          27815461
+  TX Hash:        2772B8B831EB8FD3BF49A1F76969DF01B5A6D2FF3645EF5BAE3108C77B1DBA3C
+  From:           sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw (agent, fee-granted)
+  Fee Granter:    sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg
+  Session:        39227850
+  Queried via:    Sentinel RPC tx_search
+  Explorer:       https://www.mintscan.io/sentinel/tx/2772B8B831EB8FD3BF49A1F76969DF01B5A6D2FF3645EF5BAE3108C77B1DBA3C
+
+STEP 16 — Post-disconnect fee grant via Sentinel RPC
+────────────────────────────────────────────────────────────
+  Time:           19:28:15.328Z
+  Before:         5,000,000 udvpn (5.00 P2P)
+  After:          4,880,000 udvpn (4.88 P2P)
+  Used:           120,000 udvpn (2 TXs: session start + session end)
+  Remaining:      ~81 more fee-granted TXs
+
+STEP 17 — Final balances
+────────────────────────────────────────────────────────────
+  Time:           19:28:15.543Z
+  Agent USDC:     0.001 (started 0.034, paid 0.033 via x402)
+  Agent ETH:      0.00005 (unchanged — EIP-3009 = agent pays 0 gas)
+  Agent P2P:      0.00 (all Sentinel TXs fee-granted)
+  Operator USDC:  1.834357
+  Operator ETH:   0.003539
+
+
+══════════════════════════════════════════════════════════════════════
+  ALL ON-CHAIN TRANSACTIONS (5)
+══════════════════════════════════════════════════════════════════════
+
+TX 1 — Base: USDC funding (operator → agent)
+  Chain:      Base (EIP-155:8453)
+  Time:       19:27:10Z
+  Block:      44702740
+  TX Hash:    0xe476d480116ad91fdefb647285dd1f3cb3f62473ef7d0dc153a07250a8ff4e41
+  From:       0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49
+  To:         0x8FA1D47589841902d39e308d65799B36A27Df075
+  Amount:     0.034 USDC
+  Explorer:   https://basescan.org/tx/0xe476d480116ad91fdefb647285dd1f3cb3f62473ef7d0dc153a07250a8ff4e41
+
+TX 2 — Base: ETH gas funding (operator → agent)
+  Chain:      Base (EIP-155:8453)
+  Time:       19:27:15Z
+  Block:      44702743
+  TX Hash:    0xb224ee7d98424249026c7c5fa881b42125282717f226868bb30e333fe1f523d8
+  From:       0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49
+  To:         0x8FA1D47589841902d39e308d65799B36A27Df075
+  Amount:     0.00005 ETH
+  Explorer:   https://basescan.org/tx/0xb224ee7d98424249026c7c5fa881b42125282717f226868bb30e333fe1f523d8
+
+TX 3 — Sentinel: Provision (MsgShareSubscription + MsgGrantAllowance)
+  Chain:      Sentinel (sentinelhub-2)
+  Time:       19:27:25Z
+  TX Hash:    113628625660433B3E53E5B90306EF0C22E7900439F93448708CA084B8DA7367
+  From:       sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg (operator)
+  For Agent:  sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw
+  Sub ID:     1192288
+  Explorer:   https://www.mintscan.io/sentinel/tx/113628625660433B3E53E5B90306EF0C22E7900439F93448708CA084B8DA7367
+
+TX 4 — Sentinel: Start session (MsgStartSessionRequest, fee-granted)
+  Chain:      Sentinel (sentinelhub-2)
+  Time:       19:27:29Z
+  Block:      27815452
+  TX Hash:    45EA77A5773C97B3CEB48550A2BA238A58E442D8B62B548D7A1C4638E80315C2
+  From:       sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw (agent)
+  Fee Grant:  sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg (operator pays gas)
+  Session:    39227850
+  Explorer:   https://www.mintscan.io/sentinel/tx/45EA77A5773C97B3CEB48550A2BA238A58E442D8B62B548D7A1C4638E80315C2
+
+TX 5 — Sentinel: End session (MsgCancelSessionRequest, fee-granted)
+  Chain:      Sentinel (sentinelhub-2)
+  Time:       19:28:08Z
+  Block:      27815461
+  TX Hash:    2772B8B831EB8FD3BF49A1F76969DF01B5A6D2FF3645EF5BAE3108C77B1DBA3C
+  From:       sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw (agent)
+  Fee Grant:  sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg (operator pays gas)
+  Session:    39227850
+  Explorer:   https://www.mintscan.io/sentinel/tx/2772B8B831EB8FD3BF49A1F76969DF01B5A6D2FF3645EF5BAE3108C77B1DBA3C
+
+
+══════════════════════════════════════════════════════════════════════
+  BALANCES
+══════════════════════════════════════════════════════════════════════
+
+Agent (Base):
+  After funding:    0.034 USDC / 0.00005 ETH
+  After x402:       0.001 USDC / 0.00005 ETH (paid 0.033 USDC, 0 ETH gas)
+
+Agent (Sentinel):
+  P2P:              0.00 (all TXs covered by fee grant)
+
+Operator:
+  USDC:             1.834357
+  ETH:              0.003539
+
+
+══════════════════════════════════════════════════════════════════════
+  FEE GRANT (queried via Sentinel RPC)
+══════════════════════════════════════════════════════════════════════
+
+  Granter:          sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg (operator)
+  Grantee:          sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw (agent)
+  Initial:          5,000,000 udvpn (5.00 P2P)
+  After disconnect: 4,880,000 udvpn (4.88 P2P)
+  Used:             120,000 udvpn (2 TXs: start + end session)
+  Remaining:        ~81 more fee-granted TXs
+  Expiration:       2026-04-16T19:27:15Z
+  Allowed messages:
+    - /sentinel.subscription.v3.MsgStartSessionRequest
+    - /sentinel.session.v3.MsgCancelSessionRequest
+    - /sentinel.session.v3.MsgUpdateSessionRequest
+    - /sentinel.node.v3.MsgStartSessionRequest
+
+
+══════════════════════════════════════════════════════════════════════
+  PROVISIONING
+══════════════════════════════════════════════════════════════════════
+
+  Provisioned:      true
+  Subscription:     1192288
+  Plan ID:          42
+  Fee Granter:      sent12e03wzmxjerwqt63p252cqs90jwfuwdd4fjhzg
+  Sentinel TX:      113628625660433B3E53E5B90306EF0C22E7900439F93448708CA084B8DA7367
+  Expires:          2026-04-16T19:27:15Z
+  Operator EVM:     0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49
+
+
+══════════════════════════════════════════════════════════════════════
+  VPN CONNECTION
+══════════════════════════════════════════════════════════════════════
+
+  Session ID:       39227850
+  Protocol:         WireGuard
+  Node:             sentnode10e7wrxjfzywvsvptewqrg0kjsrrap3277zdkke
+  Country:          United States
+  City:             Columbus
+  Connect time:     25.9s
+
+
+══════════════════════════════════════════════════════════════════════
+  PRICING
+══════════════════════════════════════════════════════════════════════
+
+  1 day:   $0.033  →  POST /vpn/connect/1day
+  7 days:  $0.233  →  POST /vpn/connect/7days
+  30 days: $1.00   →  POST /vpn/connect/30days
+
+  Payment:   x402 HTTP 402 (EIP-3009 transferWithAuthorization)
+  Asset:     USDC on Base mainnet (EIP-155:8453)
+  Contract:  0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+
+══════════════════════════════════════════════════════════════════════
+  QUERY URLS
+══════════════════════════════════════════════════════════════════════
+
+  Agent fee grants:
+    https://lcd.sentinel.co/cosmos/feegrant/v1beta1/allowances/sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw
+
+  Agent sessions:
+    https://lcd.sentinel.co/sentinel/session/v3/accounts/sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw/sessions
+
+  Agent subscriptions:
+    https://lcd.sentinel.co/sentinel/subscription/v3/accounts/sent1xn5cq84jt9pa82k3hadnr54xxvguj3f7jqkevw/subscriptions
+
+  Session 39227850:
+    https://lcd.sentinel.co/sentinel/session/v3/sessions/39227850
+
+  Agent on Base:
+    https://basescan.org/address/0x8FA1D47589841902d39e308d65799B36A27Df075
+
+  Operator on Base:
+    https://basescan.org/address/0xCC689D76786a698EAc6b3b7ba9e0b6b3AED72B49
+
+
+══════════════════════════════════════════════════════════════════════
+  TIMELINE
+══════════════════════════════════════════════════════════════════════
+
+  19:27:05Z  Step  1  Generate fresh EVM wallet
+  19:27:05Z  Step  2  Generate fresh Sentinel wallet
+  19:27:05Z  Step  3  Fund agent: USDC on Base
+  19:27:10Z           └─ confirmed (block 44702740)
+  19:27:10Z  Step  4  Fund agent: ETH on Base
+  19:27:15Z           └─ confirmed (block 44702743)
+  19:27:15Z  Step  5  Verify agent funded
+  19:27:15Z  Step  6  POST /vpn/connect/1day → HTTP 402
+  19:27:15Z  Step  7  x402 payment: sign → settle → provision (9.5s)
+  19:27:25Z           └─ confirmed
+  19:27:25Z  Step  8  Provisioning result received (HTTP 200)
+  19:27:26Z  Step  9  Query fee grant via RPC
+  19:27:26Z  Step 10  Connect to VPN (fee-granted)
+  19:27:29Z           └─ session start TX on chain (block 27815452)
+  19:27:52Z  Step 11  VPN connected (25.9s)
+  19:28:06Z  Step 12  Session start TX found via RPC
+  19:28:06Z  Step 13  Verify tunnel active
+  19:28:06Z  Step 14  Disconnect + end session
+  19:28:08Z           └─ session end TX on chain (block 27815461)
+  19:28:15Z  Step 15  Session end TX found via RPC
+  19:28:15Z  Step 16  Post-disconnect fee grant (used 120,000 udvpn)
+  19:28:15Z  Step 17  Final balances
