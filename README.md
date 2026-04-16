@@ -36,7 +36,7 @@ Agent                           x402 Backend                    Sentinel Chain
                   │                 MsgGrantAllowance ─────────> Agent pays 0 gas
                   │
 4. connect()                    Fee granted
-   via blue-ai-connect          ──────────────────────────────> MsgStartSession
+   via blue-agent-connect          ──────────────────────────────> MsgStartSession
                   │
 5. Handshake directly with VPN node (we never see this)
                   │

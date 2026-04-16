@@ -214,7 +214,7 @@ This is a flywheel. Every agent that connects makes the network more valuable fo
 - Fee grant module
 - MsgShareSubscription
 - blue-js-sdk (338 exports, 671 tests, published npm v2.0.0)
-- blue-ai-connect (29 exports, WG+V2Ray E2E verified, published npm v2.0.1)
+- blue-agent-connect (29 exports, WG+V2Ray E2E verified, published npm v2.0.1)
 - Node tester (Sentinel nodes tested)
 - P2P treasury (funded)
 

@@ -33,7 +33,7 @@ FLOW OVERVIEW
     |
     | 4. Returns ProvisionResult to agent
     v
-  Agent calls sentinel-ai-connect
+  Agent calls blue-agent-connect
     - connect({ mnemonic, subscriptionId, feeGranter })
     - MsgStartSessionRequest on Sentinel (fee-granted, 0 P2P)
     - WireGuard handshake with node

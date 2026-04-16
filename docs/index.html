@@ -760,9 +760,10 @@ footer a:hover { color: white; }
 <!-- ─── Hero ─── -->
 <section class="hero">
   <div class="container">
-    <div class="protocol-badge fade-in">Live on Base Mainnet &middot; Sentinel dVPN</div>
+    <div class="protocol-badge fade-in">Live on Base Mainnet &middot; Sentinel dVPN &middot; Windows (macOS/Linux coming soon)</div>
     <h1 class="fade-in">Private internet<br>for <span class="highlight">AI agents</span></h1>
     <p class="subtitle fade-in">AI agents pay USDC on Base for private VPN access through Sentinel's decentralized node network. Two paths: go fully autonomous, or let us manage everything. No KYC. No accounts. Everything on-chain.</p>
+    <p class="subtitle fade-in" style="font-size: 14px; color: var(--orange); margin-top: 8px;">Currently verified on Windows only. Requires admin privileges for WireGuard. macOS and Linux support is built but untested.</p>
 
     <div class="code-preview fade-in">
       <div class="code-block">
@@ -989,65 +990,92 @@ footer a:hover { color: white; }
 <span class="cm">// This is what the current committed code implements.</span></code></pre>
     </div>
 
-    <h3 style="font-size: 16px; color: var(--accent-bright); font-family: var(--font-mono); margin-bottom: 16px; letter-spacing: 0.5px;">&#9675; Managed Plan Flow &mdash; Building Now</h3>
+    <h3 style="font-size: 16px; color: var(--green); font-family: var(--font-mono); margin-bottom: 16px; letter-spacing: 0.5px;">&#9679; Managed Plan Flow &mdash; Live Now</h3>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
         <div class="label">Install &mdash; Managed plan (x402 handles everything)</div>
       </div>
-      <pre><code><span class="fn">npm install</span> @x402/fetch</code></pre>
+      <pre><code><span class="fn">npm install</span> @x402/fetch @x402/evm blue-js-sdk viem</code></pre>
     </div>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Buy 30 days of VPN &mdash; Base mainnet</div>
+        <div class="label">Step 1: Create Sentinel wallet + set up x402 payment client</div>
       </div>
-      <pre><code><span class="kw">import</span> { <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
+      <pre><code><span class="kw">import</span> { <span class="fn">x402Client</span>, <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">ExactEvmScheme</span> } <span class="kw">from</span> <span class="str">'@x402/evm/exact/client'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">createWalletClient</span>, <span class="fn">http</span> } <span class="kw">from</span> <span class="str">'viem'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">privateKeyToAccount</span> } <span class="kw">from</span> <span class="str">'viem/accounts'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">base</span> } <span class="kw">from</span> <span class="str">'viem/chains'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">createWallet</span>, <span class="fn">connect</span>, <span class="fn">disconnect</span> } <span class="kw">from</span> <span class="str">'blue-agent-connect'</span><span class="op">;</span>
 
-<span class="cm">// Wrap fetch with your EVM private key &mdash; key never leaves the agent</span>
-<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
+<span class="cm">// Create a Sentinel wallet (one-time &mdash; save the mnemonic!)</span>
+<span class="kw">const</span> wallet <span class="op">=</span> <span class="kw">await</span> <span class="fn">createWallet</span>()<span class="op">;</span>
+<span class="cm">// wallet.address = 'sent1...'  wallet.mnemonic = '12 words'</span>
 
-<span class="cm">// Request VPN access &mdash; 402 &rarr; auto-pay &rarr; provisioned</span>
+<span class="cm">// Set up x402 payment client with your EVM key</span>
+<span class="kw">const</span> account <span class="op">=</span> <span class="fn">privateKeyToAccount</span>(process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
+<span class="kw">const</span> viemClient <span class="op">=</span> <span class="fn">createWalletClient</span>({
+  account<span class="op">,</span> <span class="prop">chain</span><span class="op">:</span> base<span class="op">,</span> <span class="prop">transport</span><span class="op">:</span> <span class="fn">http</span>(<span class="str">'https://mainnet.base.org'</span>)<span class="op">,</span>
+})<span class="op">;</span>
+<span class="kw">const</span> scheme <span class="op">=</span> <span class="kw">new</span> <span class="fn">ExactEvmScheme</span>({
+  <span class="prop">address</span><span class="op">:</span> account<span class="op">.</span>address<span class="op">,</span>
+  <span class="prop">signTypedData</span><span class="op">:</span> (msg) <span class="op">=></span> viemClient<span class="op">.</span><span class="fn">signTypedData</span>(msg)<span class="op">,</span>
+})<span class="op">;</span>
+<span class="kw">const</span> client <span class="op">=</span> <span class="kw">new</span> <span class="fn">x402Client</span>()<span class="op">;</span>
+client<span class="op">.</span><span class="fn">register</span>(<span class="str">'eip155:8453'</span><span class="op">,</span> scheme)<span class="op">;</span>
+<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> client)<span class="op">;</span></code></pre>
+    </div>
+
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">Step 2: Buy 30 days of VPN &mdash; Base mainnet</div>
+      </div>
+      <pre><code><span class="cm">// Request VPN access &mdash; 402 &rarr; auto-sign &rarr; facilitator settles &rarr; provisioned</span>
 <span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">paidFetch</span>(<span class="str">'https://x402.blue/vpn/connect/30days'</span><span class="op">,</span> {
   <span class="prop">method</span><span class="op">:</span> <span class="str">'POST'</span><span class="op">,</span>
   <span class="prop">headers</span><span class="op">:</span> { <span class="str">'Content-Type'</span><span class="op">:</span> <span class="str">'application/json'</span> }<span class="op">,</span>
-  <span class="prop">body</span><span class="op">:</span> JSON<span class="op">.</span><span class="fn">stringify</span>({ <span class="prop">sentinelAddr</span><span class="op">:</span> <span class="str">'sent1abc...'</span> })<span class="op">,</span>
+  <span class="prop">body</span><span class="op">:</span> JSON<span class="op">.</span><span class="fn">stringify</span>({ <span class="prop">sentinelAddr</span><span class="op">:</span> wallet<span class="op">.</span>address })<span class="op">,</span>
 })<span class="op">;</span>
 
 <span class="kw">const</span> provision <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
 <span class="cm">// {</span>
 <span class="cm">//   provisioned: true,</span>
-<span class="cm">//   subscriptionId: 1170850,</span>
+<span class="cm">//   subscriptionId: 1192288,</span>
 <span class="cm">//   planId: 42,</span>
-<span class="cm">//   feeGranter: 'sent12e03w...',  &larr; operator pays all gas</span>
-<span class="cm">//   sentinelTxHash: '2C1CFE...5975',</span>
+<span class="cm">//   feeGranter: 'sent12e03w...',     &larr; operator pays all gas</span>
+<span class="cm">//   nodeAddress: 'sentnode1...',      &larr; random node &mdash; or choose from nodes[]</span>
+<span class="cm">//   nodes: ['sentnode1a...', ...],   &larr; full list of plan nodes</span>
+<span class="cm">//   sentinelTxHash: 'F1FE3C...',</span>
 <span class="cm">//   expiresAt: '2026-05-14T...',</span>
-<span class="cm">//   operatorAddress: '0xCC68...',</span>
-<span class="cm">//   instructions: 'Use sentinel-ai-connect: connect({ ... })'</span>
 <span class="cm">// }</span></code></pre>
     </div>
 
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">Step 2: Connect to VPN &mdash; use provisioned credentials</div>
+        <div class="label">Step 3: Connect to VPN &mdash; use provisioned credentials</div>
       </div>
-      <pre><code><span class="kw">import</span> { <span class="fn">connect</span>, <span class="fn">disconnect</span> } <span class="kw">from</span> <span class="str">'sentinel-ai-connect'</span><span class="op">;</span>
+      <pre><code><span class="cm">// connect() and createWallet() already imported above from 'blue-agent-connect'</span>
 
 <span class="cm">// Connect using the provisioned subscription + fee grant</span>
 <span class="cm">// Agent has 0 P2P tokens &mdash; operator covers all gas</span>
+<span class="cm">// Server returns nodeAddress (random) + nodes[] (full list)</span>
 <span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
-  <span class="prop">mnemonic</span><span class="op">:</span> process<span class="op">.</span>env<span class="op">.</span>SENTINEL_MNEMONIC<span class="op">,</span>
-  <span class="prop">subscriptionId</span><span class="op">:</span> provision<span class="op">.</span>subscriptionId<span class="op">,</span>  <span class="cm">// from provisioning response</span>
+  <span class="prop">mnemonic</span><span class="op">:</span> wallet<span class="op">.</span>mnemonic<span class="op">,</span>                    <span class="cm">// from Step 1</span>
+  <span class="prop">nodeAddress</span><span class="op">:</span> provision<span class="op">.</span>nodeAddress<span class="op">,</span>        <span class="cm">// server picks random node for you</span>
+  <span class="prop">subscriptionId</span><span class="op">:</span> String(provision<span class="op">.</span>subscriptionId)<span class="op">,</span>  <span class="cm">// from Step 2</span>
   <span class="prop">feeGranter</span><span class="op">:</span> provision<span class="op">.</span>feeGranter<span class="op">,</span>          <span class="cm">// operator pays gas</span>
 })<span class="op">;</span>
 
 <span class="cm">// All traffic now routes through encrypted P2P tunnel</span>
 console<span class="op">.</span><span class="fn">log</span>(<span class="str">`VPN active: ${vpn.ip} via ${vpn.protocol}`</span>)<span class="op">;</span>
 <span class="cm">// { connected: true, ip: '104.234.x.x', protocol: 'wireguard',</span>
-<span class="cm">//   sessionId: '39185776', nodeAddress: 'sentnode1...' }</span>
+<span class="cm">//   sessionId: '39269345', nodeAddress: 'sentnode1...' }</span>
 
 <span class="cm">// Disconnect also uses fee grant &mdash; 0 tokens needed</span>
 <span class="kw">await</span> <span class="fn">disconnect</span>()<span class="op">;</span></code></pre>
@@ -1074,7 +1102,7 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
 <span class="cm">//    &rarr; Server provisions agent on Sentinel chain</span>
 <span class="cm">//    &rarr; Returns { subscriptionId, feeGranter, expiresAt }</span>
 <span class="cm">//</span>
-<span class="cm">// 5. Agent calls connect({ subscriptionId, feeGranter })</span>
+<span class="cm">// 5. Agent calls connect({ mnemonic, nodeAddress: provision.nodeAddress, subscriptionId, feeGranter })</span>
 <span class="cm">//    &rarr; SDK validates fee grant on-chain (RPC, ~250ms)</span>
 <span class="cm">//    &rarr; Broadcasts MsgStartSession via broadcastWithFeeGrant</span>
 <span class="cm">//    &rarr; Handshakes with VPN node (WireGuard/V2Ray)</span>
@@ -1088,7 +1116,7 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
       </div>
       <pre><code><span class="kw">try</span> {
   <span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
-    <span class="prop">mnemonic</span><span class="op">,</span> <span class="prop">subscriptionId</span><span class="op">,</span> <span class="prop">feeGranter</span><span class="op">,</span>
+    <span class="prop">mnemonic</span><span class="op">,</span> <span class="prop">nodeAddress</span><span class="op">,</span> <span class="prop">subscriptionId</span><span class="op">,</span> <span class="prop">feeGranter</span><span class="op">,</span>
   })<span class="op">;</span>
 } <span class="kw">catch</span> (err) {
   <span class="kw">if</span> (err<span class="op">.</span>code <span class="op">===</span> <span class="str">'FEE_GRANT_NOT_FOUND'</span>) {
@@ -1111,16 +1139,19 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
         <div class="label">Check pricing (free, no payment)</div>
       </div>
       <pre><code><span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'https://x402.blue/pricing'</span>)<span class="op">;</span>
+<span class="kw">const</span> pricing <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
 <span class="cm">// {</span>
 <span class="cm">//   protocol: 'x402', network: 'eip155:8453', asset: 'USDC',</span>
+<span class="cm">//   payTo: '0xCC689D...',</span>
 <span class="cm">//   tiers: {</span>
 <span class="cm">//     '1day':  { price: '$0.033',  endpoint: '/vpn/connect/1day' },</span>
 <span class="cm">//     '7days': { price: '$0.233',  endpoint: '/vpn/connect/7days' },</span>
 <span class="cm">//     '30days':{ price: '$1.00',   endpoint: '/vpn/connect/30days' }</span>
 <span class="cm">//   },</span>
-<span class="cm">//   nodes: 'sentinel-network', countries: '70+',</span>
+<span class="cm">//   sentinelNetwork: 'sentinel', countries: '70+',</span>
 <span class="cm">//   protocols: ['wireguard', 'v2ray']</span>
-<span class="cm">// }</span></code></pre>
+<span class="cm">// }</span>
+<span class="cm">// Minimum USDC needed: $0.033 for 1 day tier</span></code></pre>
     </div>
   </div>
 </section>
@@ -1224,6 +1255,7 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
         <div class="label">Free endpoints (no payment)</div>
       </div>
       <pre><code><span class="fn">GET</span> /pricing              <span class="cm">Tiers, network, asset info</span>
+<span class="fn">GET</span> /nodes                <span class="cm">Plan nodes &mdash; agent picks or server picks random</span>
 <span class="fn">GET</span> /health               <span class="cm">Server status + uptime</span>
 <span class="fn">GET</span> /agent/:sentinelAddr  <span class="cm">Check subscription status</span></code></pre>
     </div>
@@ -1260,18 +1292,34 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
     <div class="code-block" style="margin-bottom: 24px;">
       <div class="bar">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="label">e2e-vpn.mjs &mdash; complete agent script</div>
+        <div class="label">e2e-vpn.mjs &mdash; complete agent script (copy-paste ready)</div>
       </div>
-      <pre><code><span class="kw">import</span> { <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
-<span class="kw">import</span> { <span class="fn">connect</span>, <span class="fn">disconnect</span>, <span class="fn">createWallet</span> } <span class="kw">from</span> <span class="str">'sentinel-ai-connect'</span><span class="op">;</span>
+      <pre><code><span class="cm">// npm install @x402/fetch @x402/evm blue-js-sdk viem</span>
+
+<span class="kw">import</span> { <span class="fn">x402Client</span>, <span class="fn">wrapFetchWithPayment</span> } <span class="kw">from</span> <span class="str">'@x402/fetch'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">ExactEvmScheme</span> } <span class="kw">from</span> <span class="str">'@x402/evm/exact/client'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">createWalletClient</span>, <span class="fn">http</span> } <span class="kw">from</span> <span class="str">'viem'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">privateKeyToAccount</span> } <span class="kw">from</span> <span class="str">'viem/accounts'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">base</span> } <span class="kw">from</span> <span class="str">'viem/chains'</span><span class="op">;</span>
+<span class="kw">import</span> { <span class="fn">createWallet</span>, <span class="fn">connect</span>, <span class="fn">disconnect</span> } <span class="kw">from</span> <span class="str">'blue-agent-connect'</span><span class="op">;</span>
 
 <span class="cm">// ── Step 1: Create Sentinel wallet (one-time) ──</span>
 <span class="kw">const</span> wallet <span class="op">=</span> <span class="kw">await</span> <span class="fn">createWallet</span>()<span class="op">;</span>
-<span class="cm">// Save wallet.mnemonic securely &mdash; this is the agent's VPN identity</span>
+<span class="cm">// SAVE wallet.mnemonic &mdash; this is the agent's VPN identity</span>
 
-<span class="cm">// ── Step 2: Pay USDC on Base via x402 ──</span>
-<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
+<span class="cm">// ── Step 2: Set up x402 payment client ──</span>
+<span class="kw">const</span> account <span class="op">=</span> <span class="fn">privateKeyToAccount</span>(process<span class="op">.</span>env<span class="op">.</span>EVM_KEY)<span class="op">;</span>
+<span class="kw">const</span> viemClient <span class="op">=</span> <span class="fn">createWalletClient</span>({
+  account<span class="op">,</span> <span class="prop">chain</span><span class="op">:</span> base<span class="op">,</span> <span class="prop">transport</span><span class="op">:</span> <span class="fn">http</span>(<span class="str">'https://mainnet.base.org'</span>)<span class="op">,</span>
+})<span class="op">;</span>
+<span class="kw">const</span> client <span class="op">=</span> <span class="kw">new</span> <span class="fn">x402Client</span>()<span class="op">;</span>
+client<span class="op">.</span><span class="fn">register</span>(<span class="str">'eip155:8453'</span><span class="op">,</span> <span class="kw">new</span> <span class="fn">ExactEvmScheme</span>({
+  <span class="prop">address</span><span class="op">:</span> account<span class="op">.</span>address<span class="op">,</span>
+  <span class="prop">signTypedData</span><span class="op">:</span> (msg) <span class="op">=></span> viemClient<span class="op">.</span><span class="fn">signTypedData</span>(msg)<span class="op">,</span>
+}))<span class="op">;</span>
+<span class="kw">const</span> paidFetch <span class="op">=</span> <span class="fn">wrapFetchWithPayment</span>(fetch<span class="op">,</span> client)<span class="op">;</span>
 
+<span class="cm">// ── Step 3: Pay USDC on Base via x402 ──</span>
 <span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">paidFetch</span>(<span class="str">'https://x402.blue/vpn/connect/30days'</span><span class="op">,</span> {
   <span class="prop">method</span><span class="op">:</span> <span class="str">'POST'</span><span class="op">,</span>
   <span class="prop">headers</span><span class="op">:</span> { <span class="str">'Content-Type'</span><span class="op">:</span> <span class="str">'application/json'</span> }<span class="op">,</span>
@@ -1279,24 +1327,23 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
 })<span class="op">;</span>
 
 <span class="kw">const</span> provision <span class="op">=</span> <span class="kw">await</span> res<span class="op">.</span><span class="fn">json</span>()<span class="op">;</span>
-<span class="cm">// USDC settled on Base, agent added to Sentinel subscription</span>
-<span class="cm">// provision.feeGranter = operator's sent1... address</span>
-<span class="cm">// provision.subscriptionId = active subscription ID</span>
+<span class="cm">// provision.nodeAddress + provision.subscriptionId + provision.feeGranter &rarr; all you need</span>
 
-<span class="cm">// ── Step 3: Connect to VPN (0 gas, 0 P2P) ──</span>
+<span class="cm">// ── Step 4: Connect to VPN (0 gas, 0 P2P) ──</span>
 <span class="kw">const</span> vpn <span class="op">=</span> <span class="kw">await</span> <span class="fn">connect</span>({
   <span class="prop">mnemonic</span><span class="op">:</span> wallet<span class="op">.</span>mnemonic<span class="op">,</span>
-  <span class="prop">subscriptionId</span><span class="op">:</span> provision<span class="op">.</span>subscriptionId<span class="op">,</span>
+  <span class="prop">nodeAddress</span><span class="op">:</span> provision<span class="op">.</span>nodeAddress<span class="op">,</span>       <span class="cm">// server picks random &mdash; or choose from provision.nodes[]</span>
+  <span class="prop">subscriptionId</span><span class="op">:</span> String(provision<span class="op">.</span>subscriptionId)<span class="op">,</span>
   <span class="prop">feeGranter</span><span class="op">:</span> provision<span class="op">.</span>feeGranter<span class="op">,</span>
 })<span class="op">;</span>
 
 console<span class="op">.</span><span class="fn">log</span>(<span class="str">`VPN active: ${vpn.ip} via ${vpn.protocol}`</span>)<span class="op">;</span>
 <span class="cm">// All traffic now through encrypted P2P tunnel</span>
 
-<span class="cm">// ── Step 4: Do private work ──</span>
+<span class="cm">// ── Step 5: Do private work ──</span>
 <span class="kw">const</span> data <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'https://api.example.com/sensitive'</span>)<span class="op">;</span>
 
-<span class="cm">// ── Step 5: Disconnect (also uses fee grant) ──</span>
+<span class="cm">// ── Step 6: Disconnect (also uses fee grant) ──</span>
 <span class="kw">await</span> <span class="fn">disconnect</span>()<span class="op">;</span></code></pre>
     </div>
 
@@ -1312,10 +1359,12 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
   <span class="str">"subscriptionId"</span>: <span class="num">1192288</span>,      <span class="cm">&larr; pass to connect()</span>
   <span class="str">"planId"</span>: <span class="num">42</span>,
   <span class="str">"feeGranter"</span>: <span class="str">"sent12e03..."</span>,  <span class="cm">&larr; pass to connect()</span>
+  <span class="str">"nodeAddress"</span>: <span class="str">"sentnode1..."</span>,  <span class="cm">&larr; random node selected &mdash; pass to connect()</span>
+  <span class="str">"nodes"</span>: [<span class="str">"sentnode1a..."</span>, <span class="str">"sentnode1b..."</span>],  <span class="cm">&larr; full list &mdash; agent can choose</span>
   <span class="str">"sentinelTxHash"</span>: <span class="str">"2C1CFE..."</span>,
   <span class="str">"expiresAt"</span>: <span class="str">"2026-05-14T..."</span>,
   <span class="str">"operatorAddress"</span>: <span class="str">"0xCC689D..."</span>,
-  <span class="str">"instructions"</span>: <span class="str">"Use sentinel-ai-connect: connect({ mnemonic, subscriptionId, feeGranter })"</span>
+  <span class="str">"instructions"</span>: <span class="str">"connect({ mnemonic, nodeAddress, subscriptionId, feeGranter })"</span>
 }</code></pre>
     </div>
   </div>
@@ -1381,12 +1430,105 @@ console<span class="op">.</span><span class="fn">log</span>(<span class="str">`V
   </div>
 </section>
 
+<div class="divider"></div>
+
+<!-- ─── Builder Configuration ─── -->
+<section id="builder-config">
+  <div class="container">
+    <div class="section-label">For Builders</div>
+    <h2>Deploy your own x402 VPN server</h2>
+    <p class="desc">All operator-specific variables are in <code>.env</code>. Change these to deploy your own instance with your own wallet, plan, and pricing.</p>
+
+    <div class="code-block" style="margin-bottom: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">server/.env &mdash; all configurable variables</div>
+      </div>
+      <pre><code><span class="cm"># ─── Base Chain (EVM) ───</span>
+
+<span class="cm"># Your EVM wallet address &mdash; where USDC payments are settled</span>
+<span class="fn">OPERATOR_ADDRESS</span>=<span class="str">0xYourWalletAddress</span>
+
+<span class="cm"># Base mainnet (eip155:8453) or Sepolia testnet (eip155:84532)</span>
+<span class="fn">BASE_NETWORK</span>=<span class="str">eip155:8453</span>
+
+<span class="cm"># Self-hosted facilitator EVM private key</span>
+<span class="cm"># This wallet needs ETH on Base for gas (~$0.001 per settlement)</span>
+<span class="cm"># The facilitator verifies EIP-3009 signatures and settles USDC</span>
+<span class="fn">FACILITATOR_PRIVATE_KEY</span>=<span class="str">0xYourFacilitatorKey</span>
+<span class="fn">FACILITATOR_PORT</span>=<span class="num">4021</span>
+
+<span class="cm"># ─── Sentinel Chain ───</span>
+
+<span class="cm"># Operator mnemonic &mdash; this wallet must own the plan and have P2P for gas</span>
+<span class="cm"># Used to: share subscriptions, create fee grants, manage subscription pool</span>
+<span class="fn">SENTINEL_OPERATOR_MNEMONIC</span>=<span class="str">your twelve word mnemonic phrase here</span>
+
+<span class="cm"># Your Sentinel plan ID &mdash; create one at sentinel.co or via CLI</span>
+<span class="cm"># The plan determines which nodes agents can connect to</span>
+<span class="fn">SENTINEL_PLAN_ID</span>=<span class="num">42</span>
+
+<span class="cm"># RPC and LCD endpoints (defaults work for most setups)</span>
+<span class="fn">SENTINEL_RPC_URL</span>=<span class="str">https://rpc.sentinel.co:443</span>
+<span class="fn">SENTINEL_LCD_URL</span>=<span class="str">https://lcd.sentinel.co</span>
+
+<span class="cm"># ─── Server ───</span>
+<span class="fn">PORT</span>=<span class="num">4020</span></code></pre>
+    </div>
+
+    <div class="security-grid">
+      <div class="security-item">
+        <h4>OPERATOR_ADDRESS</h4>
+        <p>EVM wallet on Base. This is where USDC payments from agents are settled by the facilitator. Must match the <code>payTo</code> field in x402 payment middleware. Fund with ETH for gas if also used as facilitator.</p>
+      </div>
+      <div class="security-item">
+        <h4>FACILITATOR_PRIVATE_KEY</h4>
+        <p>EVM private key for the self-hosted facilitator. This wallet verifies EIP-3009 <code>transferWithAuthorization</code> signatures and settles USDC on-chain. Needs ~0.001 ETH per settlement on Base. Can be the same as OPERATOR_ADDRESS.</p>
+      </div>
+      <div class="security-item">
+        <h4>SENTINEL_OPERATOR_MNEMONIC</h4>
+        <p>12-word BIP39 mnemonic for the Sentinel chain operator wallet. Must own the plan (SENTINEL_PLAN_ID) and hold P2P tokens for gas. Used to create <code>MsgShareSubscription</code> + <code>MsgGrantAllowance</code> for each agent. ~0.01 P2P per provisioning TX.</p>
+      </div>
+      <div class="security-item">
+        <h4>SENTINEL_PLAN_ID</h4>
+        <p>Your Sentinel plan ID. Determines which VPN nodes agents can access. Create a plan via <code>sentinelcli tx plan create</code> or through the Plan Manager. Link nodes to the plan, then agents connect to those nodes.</p>
+      </div>
+    </div>
+
+    <div class="code-block" style="margin-top: 24px;">
+      <div class="bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="label">sentinel.ts &mdash; tunable constants (in source code)</div>
+      </div>
+      <pre><code><span class="cm">// Bytes to allocate per agent &mdash; how much data each agent can use</span>
+<span class="kw">const</span> <span class="fn">SHARE_BYTES</span> <span class="op">=</span> <span class="num">1_000_000_000</span><span class="op">;</span>  <span class="cm">// 1 GB per agent</span>
+
+<span class="cm">// Fee grant budget per agent &mdash; covers ~25 session starts/stops</span>
+<span class="kw">const</span> <span class="fn">FEE_GRANT_SPEND_LIMIT</span> <span class="op">=</span> <span class="num">5_000_000</span><span class="op">;</span>  <span class="cm">// 5 P2P (udvpn)</span>
+
+<span class="cm">// Allowed messages for fee grant &mdash; what the agent can broadcast</span>
+<span class="kw">const</span> <span class="fn">FEE_GRANT_ALLOWED_MESSAGES</span> <span class="op">=</span> [
+  <span class="str">'/sentinel.subscription.v3.MsgStartSessionRequest'</span><span class="op">,</span>
+  <span class="str">'/sentinel.session.v3.MsgCancelSessionRequest'</span><span class="op">,</span>
+  <span class="str">'/sentinel.session.v3.MsgUpdateSessionRequest'</span><span class="op">,</span>
+  <span class="str">'/sentinel.node.v3.MsgStartSessionRequest'</span><span class="op">,</span>
+]<span class="op">;</span>
+
+<span class="cm">// Subscription pool: chain limits 8 allocations per subscription.</span>
+<span class="cm">// Server auto-creates new subscriptions when pool is exhausted.</span>
+<span class="cm">// At 1000 agents = ~125 subscriptions. Managed automatically.</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
 <!-- ─── Footer ─── -->
 <footer>
   <div class="footer-links">
     <a href="https://github.com/Sentinel-Autonomybuilder/x402" target="_blank">GitHub</a>
     <a href="https://www.npmjs.com/package/@x402/fetch" target="_blank">@x402/fetch</a>
-    <a href="https://www.npmjs.com/package/sentinel-ai-connect" target="_blank">sentinel-ai-connect</a>
+    <a href="https://www.npmjs.com/package/blue-js-sdk" target="_blank">blue-js-sdk</a>
     <a href="https://sentinel.co" target="_blank">Sentinel Network</a>
     <a href="https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" target="_blank">USDC on Base</a>
   </div>

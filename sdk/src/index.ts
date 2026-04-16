@@ -91,7 +91,7 @@ export async function connect(opts: ConnectOptions): Promise<ConnectResult> {
   // ─── Step 1: Create or load Sentinel wallet ───
   progress('wallet', 'Setting up Sentinel identity...');
 
-  // Dynamic import — blue-ai-connect provides wallet + VPN functions
+  // Dynamic import — blue-agent-connect provides wallet + VPN functions
   let sentinelMnemonic = opts.sentinelMnemonic;
   let sentinelAddress: string;
 
@@ -175,7 +175,7 @@ export async function connect(opts: ConnectOptions): Promise<ConnectResult> {
 
   progress('allocation', 'Provisioned on Sentinel!');
 
-  // ─── Step 6: Connect to VPN via blue-ai-connect ───
+  // ─── Step 6: Connect to VPN via blue-agent-connect ───
   progress('vpn', 'Connecting to VPN node...');
 
   try {

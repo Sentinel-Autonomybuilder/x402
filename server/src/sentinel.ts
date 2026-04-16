@@ -13,6 +13,7 @@ import {
   createSafeBroadcaster,
   querySubscriptions,
   hasActiveSubscription,
+  queryPlanNodes,
 } from 'blue-js-sdk';
 
 // buildMsg* functions are exported from blue-js-sdk at runtime but lack type declarations.
@@ -181,6 +182,8 @@ export interface ProvisionResult {
   subscriptionId: number;
   planId: number;
   feeGranter: string;
+  nodeAddress: string;
+  nodes: string[];
   sentinelTxHash: string;
   expiresAt: string;
   operatorAddress: string;
@@ -236,6 +239,8 @@ export async function provisionAgent(
       if (result.code === 0) {
         slot.allocations++;
         console.log(`[sentinel] Provisioned! TX: ${result.transactionHash}`);
+        const planNodes = await getPlanNodes();
+        const recommended = pickRandomNode(planNodes) || '';
         return {
           provisioned: true,
           sentinelAddr,
@@ -243,10 +248,12 @@ export async function provisionAgent(
           subscriptionId: slot.id,
           planId: PLAN_ID,
           feeGranter: operatorAddress,
+          nodeAddress: recommended,
+          nodes: planNodes.map(n => n.address),
           sentinelTxHash: result.transactionHash,
           expiresAt: expirationDate.toISOString(),
           operatorAddress,
-          instructions: `Use sentinel-ai-connect: connect({ mnemonic, subscriptionId: ${slot.id}, feeGranter: '${operatorAddress}' }). Fee grant active — zero gas on Sentinel.`,
+          instructions: `import { connect } from 'blue-agent-connect'; await connect({ mnemonic, nodeAddress: '${recommended}', subscriptionId: '${slot.id}', feeGranter: '${operatorAddress}' })`,
         };
       }
 
@@ -291,6 +298,8 @@ export async function provisionAgent(
   if (slot) slot.allocations++;
 
   console.log(`[sentinel] Provisioned on new sub ${subscriptionId}! TX: ${result.transactionHash}`);
+  const planNodes = await getPlanNodes();
+  const recommended = pickRandomNode(planNodes) || '';
   return {
     provisioned: true,
     sentinelAddr,
@@ -298,11 +307,44 @@ export async function provisionAgent(
     subscriptionId,
     planId: PLAN_ID,
     feeGranter: operatorAddress,
+    nodeAddress: recommended,
+    nodes: planNodes.map(n => n.address),
     sentinelTxHash: result.transactionHash,
     expiresAt: expirationDate.toISOString(),
     operatorAddress,
-    instructions: `Use sentinel-ai-connect: connect({ mnemonic, subscriptionId: ${subscriptionId}, feeGranter: '${operatorAddress}' }). Fee grant active — zero gas on Sentinel.`,
+    instructions: `import { connect } from 'blue-agent-connect'; await connect({ mnemonic, nodeAddress: '${recommended}', subscriptionId: '${subscriptionId}', feeGranter: '${operatorAddress}' })`,
   };
+}
+
+// ─── Node Discovery ───
+
+let cachedNodes: { address: string; remote_addrs: string[] }[] = [];
+let nodesCacheTime = 0;
+const NODE_CACHE_TTL = 300_000; // 5 minutes
+
+export async function getPlanNodes(): Promise<{ address: string; remote_addrs: string[] }[]> {
+  if (cachedNodes.length > 0 && Date.now() - nodesCacheTime < NODE_CACHE_TTL) {
+    return cachedNodes;
+  }
+
+  try {
+    const result = await queryPlanNodes(PLAN_ID, SENTINEL_LCD);
+    const items = (result as any).items || [];
+    cachedNodes = items.map((n: any) => ({
+      address: n.address,
+      remote_addrs: n.remote_addrs || [],
+    }));
+    nodesCacheTime = Date.now();
+    return cachedNodes;
+  } catch (err) {
+    console.warn('[sentinel] Failed to query plan nodes:', (err as Error).message);
+    return cachedNodes; // return stale cache if available
+  }
+}
+
+function pickRandomNode(nodes: { address: string }[]): string | undefined {
+  if (nodes.length === 0) return undefined;
+  return nodes[Math.floor(Math.random() * nodes.length)].address;
 }
 
 /**
