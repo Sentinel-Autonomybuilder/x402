@@ -32,8 +32,8 @@ RUN if [ -n "$SDK_REF" ]; then \
         "/Sentinel SDK/js-sdk"; \
     fi
 WORKDIR "/Sentinel SDK/js-sdk"
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; \
-    else npm install --omit=dev; fi
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev --ignore-scripts; \
+    else npm install --omit=dev --ignore-scripts; fi
 
 # ─── Runtime ───
 FROM node:22-alpine AS runtime
