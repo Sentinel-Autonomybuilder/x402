@@ -43,7 +43,7 @@ RUN apk add --no-cache su-exec \
 COPY --from=deps  /app/node_modules ./node_modules
 COPY --from=build /app/dist         ./dist
 COPY package.json ./
-COPY --from=sdk "/Sentinel SDK" "/Sentinel SDK"
+COPY --from=sdk ["/Sentinel SDK", "/Sentinel SDK"]
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
