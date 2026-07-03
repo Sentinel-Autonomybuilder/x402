@@ -6,7 +6,7 @@ import { createFacilitatorConfig } from '@coinbase/x402';
 import { HTTPFacilitatorClient, type FacilitatorConfig } from '@x402/core/server';
 import { initSentinel, provisionAgent, checkAgentStatus, checkProvisioningCapacity, getEnrichedPlanNodes, matchNodesByCountry } from './sentinel.js';
 import { createSelfHostedFacilitator, startFacilitatorServer } from './facilitator.js';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -596,18 +596,49 @@ app.get('/health', async (_req, res) => {
   res.json({ status: 'ok', uptime: process.uptime(), capacity });
 });
 
+// ─── Docs (served by this process — x402.sentinel.co has no separate static host) ───
+// docs/ lives at /app/docs in the Docker image (see Dockerfile) and at ../../docs
+// in a repo checkout (__dirname is server/dist or server/src).
+const docsDir = [join(__dirname, '..', 'docs'), join(__dirname, '..', '..', 'docs')]
+  .find(dir => existsSync(join(dir, 'index.html')));
+
+// Human-readable docs page at the root. max-age=300 keeps Cloudflare from
+// pinning a stale copy at the edge for weeks.
+let docsHtmlCache: string | null = null;
+app.get('/', (_req, res) => {
+  if (!docsHtmlCache && docsDir) {
+    try {
+      docsHtmlCache = readFileSync(join(docsDir, 'index.html'), 'utf8');
+    } catch (err) {
+      console.warn('[x402] docs/index.html not readable:', (err as Error).message);
+    }
+  }
+  if (!docsHtmlCache) {
+    return res.json({
+      protocol: 'x402',
+      message: 'Docs page not bundled in this build. See GET /manifest for the machine-readable spec.',
+      docs: '/manifest',
+    });
+  }
+  res.set('Cache-Control', 'public, max-age=300').type('html').send(docsHtmlCache);
+});
+
+app.get('/index.html', (_req, res) => res.redirect(301, '/'));
+
 // llms.txt — AI-readable summary (https://llmstxt.org convention)
 let llmsTxtCache: string | null = null;
 app.get('/llms.txt', (_req, res) => {
-  if (!llmsTxtCache) {
+  if (!llmsTxtCache && docsDir) {
     try {
-      llmsTxtCache = readFileSync(join(__dirname, '..', '..', 'docs', 'llms.txt'), 'utf8');
+      llmsTxtCache = readFileSync(join(docsDir, 'llms.txt'), 'utf8');
     } catch (err) {
       console.warn('[x402] docs/llms.txt not readable, serving stub:', (err as Error).message);
-      llmsTxtCache = '# x402\n\nSee /manifest for the machine-readable spec.\n';
     }
   }
-  res.type('text/plain').send(llmsTxtCache);
+  if (!llmsTxtCache) {
+    llmsTxtCache = '# x402\n\nSee /manifest for the machine-readable spec.\n';
+  }
+  res.set('Cache-Control', 'public, max-age=300').type('text/plain').send(llmsTxtCache);
 });
 
 // Node list — free, enriched with live geo data from each node's /status
@@ -715,6 +746,7 @@ async function start() {
   console.log('    POST /vpn/connect/30days  $1.00');
   console.log('');
   console.log('  Free Endpoints:');
+  console.log('    GET  /                     (docs page)');
   console.log('    GET  /manifest             (AI-readable JSON spec)');
   console.log('    GET  /llms.txt             (AI-readable summary)');
   console.log('    GET  /pricing');

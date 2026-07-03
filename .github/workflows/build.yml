@@ -5,6 +5,7 @@ on:
     branches: [ "master" ]
     paths:
       - "server/**"
+      - "docs/**"
       - ".github/workflows/build.yml"
   workflow_dispatch:
 
@@ -36,7 +37,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          context: ./server
+          # Repo-root context so the image bundles docs/ (served at GET /)
+          context: .
           file: ./server/Dockerfile
           tags: |
             ghcr.io/${{ env.REPO }}:latest
